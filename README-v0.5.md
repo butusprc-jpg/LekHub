@@ -1,4 +1,4 @@
-# Baan Tonkla Cafe WebApp v0.5
+# LekHub Cafe WebApp v0.5
 
 Production-hardening update
 

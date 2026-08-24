@@ -1,9 +1,9 @@
-Baan Tonkla v1.4.3 static UI audit: PASS
+LekHub v1.4.3 static UI audit: PASS
 
 LOGO
-- public/baan-tonkla-logo.png exists
-- Home uses /baan-tonkla-logo.png
-- Shared Panel header uses /baan-tonkla-logo.png
+- public/LekHub-logo.png exists
+- Home uses /LekHub-logo.png
+- Shared Panel header uses /LekHub-logo.png
 - No old Vercel absolute logo URL remains
 
 CUSTOMER LANGUAGES

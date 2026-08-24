@@ -1,4 +1,4 @@
-# Baan Tonkla Cafe WebApp v0.4
+# LekHub Cafe WebApp v0.4
 - จองโต๊ะ + ประวัติ
 - จัดงานเลี้ยง
 - สมาชิก + โปรไฟล์ + แต้ม

@@ -87,8 +87,8 @@ async function verifyLineIdentity(bindToken=''){
  return data||{ok:false,reason:'empty_identity_result'};
 }
 function App(){
- const[page,setPage]=useState(()=>initialDirectPage()),[news,setNews]=useState([]),[session,setSession]=useState(null),[profile,setProfile]=useState(null),[lineProfile,setLineProfile]=useState(()=>cachedLineProfile()),[lang,setLang]=useState(()=>localStorage.getItem('baan_tonkla_lang')||'th'),[adminGateOpen,setAdminGateOpen]=useState(false),[adminPassword,setAdminPassword]=useState(''),[adminGateMsg,setAdminGateMsg]=useState(''),[adminGateBusy,setAdminGateBusy]=useState(false),[adminDevice,setAdminDevice]=useState(()=>localStorage.getItem('baan_tonkla_admin_device')==='1');
- useEffect(()=>{localStorage.setItem('baan_tonkla_lang',lang);document.documentElement.lang=lang==='zh'?'zh-CN':lang},[lang]);
+ const[page,setPage]=useState(()=>initialDirectPage()),[news,setNews]=useState([]),[session,setSession]=useState(null),[profile,setProfile]=useState(null),[lineProfile,setLineProfile]=useState(()=>cachedLineProfile()),[lang,setLang]=useState(()=>localStorage.getItem('baan_LekHub_lang')||'th'),[adminGateOpen,setAdminGateOpen]=useState(false),[adminPassword,setAdminPassword]=useState(''),[adminGateMsg,setAdminGateMsg]=useState(''),[adminGateBusy,setAdminGateBusy]=useState(false),[adminDevice,setAdminDevice]=useState(()=>localStorage.getItem('baan_LekHub_admin_device')==='1');
+ useEffect(()=>{localStorage.setItem('baan_LekHub_lang',lang);document.documentElement.lang=lang==='zh'?'zh-CN':lang},[lang]);
  async function loadProfile(s=session){if(!s?.user){setProfile(null);return}const{data}=await sb.from('profiles').select('*').eq('id',s.user.id).maybeSingle();setProfile(data||null)}
  useEffect(()=>{
   sb.from('news_posts').select('*').eq('published',true).order('pinned',{ascending:false}).limit(5).then(({data})=>setNews(data||[]));
@@ -132,21 +132,21 @@ function App(){
    activeSession=data.session;setSession(activeSession);
    await new Promise(r=>setTimeout(r,250));
   }
-  const{data,error}=await sb.rpc('claim_baan_tonkla_admin',{p_password:adminPassword});
+  const{data,error}=await sb.rpc('claim_baan_LekHub_admin',{p_password:adminPassword});
   if(error){setAdminGateMsg('ตรวจรหัสไม่สำเร็จ กรุณาลองใหม่');setAdminGateBusy(false);return}
   if(!data?.success){setAdminGateMsg(data?.reason==='wrong_password'?'รหัสผ่านไม่ถูกต้อง':'เปิดสิทธิ์แอดมินไม่สำเร็จ');setAdminGateBusy(false);return}
-  localStorage.setItem('baan_tonkla_admin_device','1');setAdminDevice(true);
+  localStorage.setItem('baan_LekHub_admin_device','1');setAdminDevice(true);
   await loadProfile(activeSession);
   setAdminGateBusy(false);setAdminGateOpen(false);setAdminPassword('');setAdminGateMsg('');openPage('admin');window.scrollTo({top:0,behavior:'auto'});
  }
- function exitAdminMode(){localStorage.removeItem('baan_tonkla_admin_device');setAdminDevice(false);openPage('home')}
+ function exitAdminMode(){localStorage.removeItem('baan_LekHub_admin_device');setAdminDevice(false);openPage('home')}
  return <main>{page!=='admin'&&<LangBar lang={lang} setLang={setLang}/>}
  {page!=='home'&&<button className="back" onClick={()=>goPage('home')}><ArrowLeft/> {T(lang,'กลับหน้าหลัก','Home','返回首页')}</button>}
  {page==='home'?<Home setPage={goPage} news={news} profile={profile} lang={lang} initialGrab={initialGrabOpen()}/>:page==='booking'?<Booking profile={profile} session={session} lang={lang}/>:page==='event'?<Event profile={profile} lang={lang}/>:page==='member'?<Member session={session} profile={profile} lineProfile={lineProfile} reload={()=>loadProfile()} setPage={goPage} lang={lang}/>:page==='game'?<Game session={session} lang={lang}/>:page==='rewards'?<Rewards session={session} profile={profile} reload={()=>loadProfile()} lang={lang}/>:page==='admin'?<Admin session={session} profile={profile} forceAdmin={adminDevice} onExitAdmin={exitAdminMode}/>:<Coming title={menus.find(x=>x[2]===page)?.[0]}/>}{adminGateOpen&&<div className="adminPassOverlay" role="dialog" aria-modal="true" aria-label="ใส่รหัสหลังบ้าน"><form className="adminPassModal" onSubmit={unlockAdmin}><button type="button" className="adminPassClose" onClick={()=>{if(!adminGateBusy)setAdminGateOpen(false)}}>×</button><div className="adminPassIcon"><ShieldCheck/></div><h3>เข้าสู่หลังบ้าน</h3><p>ใส่รหัสผ่านแอดมิน</p><input autoFocus type="password" value={adminPassword} onChange={e=>setAdminPassword(e.target.value)} placeholder="รหัสผ่าน" autoComplete="current-password"/><button className="primary" disabled={adminGateBusy}>{adminGateBusy?'กำลังตรวจ...':'เข้าหลังบ้าน'}</button>{adminGateMsg&&<div className="adminPassMsg">{adminGateMsg}</div>}<small>ใส่ถูกครั้งเดียว เครื่องนี้จะจำว่าเป็นแอดมิน</small></form></div>}</main>
 }
 function Home({setPage,news,profile,lang,initialGrab=false}){
- const isStaff=['staff','admin','owner','super_admin'].includes(profile?.role),menus=customerMenus(lang),[grabOpen,setGrabOpen]=useState(initialGrab),[rideFrom,setRideFrom]=useState('home'),[homeAddress,setHomeAddress]=useState(()=>localStorage.getItem('baan_tonkla_home_address')||''),[grabMsg,setGrabMsg]=useState('');
- function saveHomeAddress(v){setHomeAddress(v);localStorage.setItem('baan_tonkla_home_address',v)}
+ const isStaff=['staff','admin','owner','super_admin'].includes(profile?.role),menus=customerMenus(lang),[grabOpen,setGrabOpen]=useState(initialGrab),[rideFrom,setRideFrom]=useState('home'),[homeAddress,setHomeAddress]=useState(()=>localStorage.getItem('baan_LekHub_home_address')||''),[grabMsg,setGrabMsg]=useState('');
+ function saveHomeAddress(v){setHomeAddress(v);localStorage.setItem('baan_LekHub_home_address',v)}
  async function callGrab(){
   const shop=T(lang,'บ้านต้นกล้า คาเฟ่ แอนด์ คิดส์ สเปซ','LekHub & Kids Space','LekHub & Kids Space');
   const destination=rideFrom==='home'?shop:homeAddress.trim();
@@ -155,7 +155,7 @@ function Home({setPage,news,profile,lang,initialGrab=false}){
   setGrabMsg(T(lang,`คัดลอกปลายทางแล้ว: ${destination}`,`Destination copied: ${destination}`,`已复制目的地：${destination}`));
   window.open('https://www.grab.com/th/transport/','_blank','noopener')
  }
- return <><section className="hero"><img className="storeLogo homeStoreLogo" src="/baan-tonkla-logo.png" alt="LekHub & Kids Space"/><span className="bubble">{profile?`⭐ ${profile.points_balance||0} ${T(lang,'แต้ม','points','积分')}`:T(lang,'สนุก • อร่อย • ได้แต้ม','Fun • Delicious • Earn points','好玩 • 美味 • 赚积分')}</span></section>
+ return <><section className="hero"><img className="storeLogo homeStoreLogo" src="/LekHub-logo.png" alt="LekHub & Kids Space"/><span className="bubble">{profile?`⭐ ${profile.points_balance||0} ${T(lang,'แต้ม','points','积分')}`:T(lang,'สนุก • อร่อย • ได้แต้ม','Fun • Delicious • Earn points','好玩 • 美味 • 赚积分')}</span></section>
  <section className="news"><Newspaper/><div><b>{news[0]?translatedValue(localText(news[0],'title',lang),lang):T(lang,'ยินดีต้อนรับสู่บ้านต้นกล้า','Welcome to LekHub','欢迎来到 LekHub')}</b><p>{news[0]?translatedValue(localText(news[0],'body',lang),lang):T(lang,'กิจกรรมสนุกสำหรับเด็กและครอบครัว','Fun activities for kids and families','适合儿童和家庭的有趣活动')}</p></div></section>
  <div className="homeMenuHead"><h2>{T(lang,'เมนูหลัก','Main Menu','主菜单')}</h2><small>{T(lang,'เลือกสิ่งที่ต้องการได้เลย','Choose what you need','请选择功能')}</small></div>
  <section className="homeIconGrid">{menus.map(([t,I,p,emoji])=><button className={'homeIconCard '+(p==='grab'?'grabTile':'')} key={p} onClick={()=>p==='grab'?setGrabOpen(true):setPage(p)}><span className="homeIconBubble">{I?<I/>:<span className="emojiIcon">{emoji}</span>}</span><b>{t}</b></button>)}</section>
@@ -554,7 +554,7 @@ function Admin({session,profile,forceAdmin=false,onExitAdmin}){
   const used=gameSpots.filter(x=>Number(x.level_no||1)===Number(gameLevel)).map(x=>Number(x.point_no)||0);
   let pointNo=Number(spotForm.point_no)||1;
   if(used.includes(pointNo))pointNo=(used.length?Math.max(...used):0)+1;
-  const code='TONKLA-'+Date.now().toString().slice(-8);
+  const code='LekHub-'+Date.now().toString().slice(-8);
   const payload={campaign_id:c.id,spot_code:code,level_no:Number(gameLevel),point_no:pointNo,clue:th,clue_th:th,clue_en:en,clue_zh:zh,letter,points:Number(spotForm.points)||0,reveal_message:packRevealConfig(),active:true};
   const{error}=await sb.from('game_spots').insert(payload);
   if(error){setMsg('บันทึกไม่สำเร็จ: '+friendly(error.message));return}
@@ -712,7 +712,7 @@ function Admin({session,profile,forceAdmin=false,onExitAdmin}){
 }
 
 function Coming({title}){return <Panel title={title||'กำลังพัฒนา'} sub="ระบบหลักกำลังเชื่อมต่อ"><div className="bigemoji">✨</div><p>ส่วนนี้จะทำต่อหลังจองโต๊ะและสมาชิกใช้งานเรียบร้อย</p></Panel>}
-function Panel({title,sub,children}){return <section className="panel"><header><img className="storeLogo panelStoreLogo" src="/baan-tonkla-logo.png" alt="บ้านต้นกล้า Cafe & Kids Space"/><div className="panelTitle"><h1>{title}</h1><p>{sub}</p></div></header>{children}</section>}
+function Panel({title,sub,children}){return <section className="panel"><header><img className="storeLogo panelStoreLogo" src="/LekHub-logo.png" alt="บ้านต้นกล้า Cafe & Kids Space"/><div className="panelTitle"><h1>{title}</h1><p>{sub}</p></div></header>{children}</section>}
 function friendly(m='',lang='th'){if(m.includes('Anonymous sign-ins are disabled'))return T(lang,'ต้องเปิด Anonymous Sign-Ins ใน Supabase ก่อน','Membership sign-in is temporarily unavailable','会员登录暂时不可用');if(m.includes('invalid_date'))return T(lang,'กรุณาเลือกวันที่วันนี้หรือวันถัดไป','Please choose today or a future date','请选择今天或之后的日期');if(m.includes('invalid_party_size'))return T(lang,'จำนวนคนไม่ถูกต้อง','Invalid number of guests','人数不正确');return m}
 function dateTH(d){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'})}
 function dateL(d,lang='th'){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString(lang==='zh'?'zh-CN':lang==='en'?'en-GB':'th-TH',{day:'numeric',month:'short',year:'numeric'})}
