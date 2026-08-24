@@ -15,7 +15,7 @@ const localText=(obj,base,lang)=>{
  return lang==='en'?(en||th):lang==='zh'?(zh||th):th;
 };
 const SAMPLE_I18N={
- 'ยินดีต้อนรับสู่บ้านต้นกล้า':{en:'Welcome to LekHub',zh:'欢迎来到 LekHub'},
+ 'ยินดีต้อนรับสู่LekHub':{en:'Welcome to LekHub',zh:'欢迎来到 LekHub'},
  'กิจกรรมสนุกสำหรับเด็กและครอบครัว':{en:'Fun activities for kids and families',zh:'适合儿童和家庭的有趣活动'},
  'สนุกกับกิจกรรมสำหรับเด็ก สะสมแต้ม และเกมล่าตัวอักษรใน LINE OA ของร้าน':{en:'Enjoy kids activities, collect points, and play the letter hunt game in our LINE OA.',zh:'参与儿童活动、累积积分，并在店铺 LINE OA 中体验字母寻宝游戏。'},
  'ส่วนลด 50 บาท':{en:'50 THB Discount',zh:'50 泰铢优惠'},
@@ -43,15 +43,6 @@ const customerMenus=lang=>[
  [T(lang,'เรียก Grab','Call Grab','叫 Grab'),null,'grab','🚕']
 ];
 const DIRECT_PAGES=new Set(['home','booking','event','member','game','rewards','rules','report']);
-
-const LEKHUB_UI_REFERENCES=[
- {src:'/ui/member-summary.png',title_th:'รายการสมาชิก',title_en:'Member summary',title_zh:'会员摘要',desc_th:'หน้ารายการสมาชิกตามภาพตัวอย่าง',desc_en:'Member list screen from the reference',desc_zh:'成员列表界面参考图'},
- {src:'/ui/select-screen-1.png',title_th:'หน้าเลือก',title_en:'Selection screen',title_zh:'选择页面',desc_th:'ฟอร์มเลือกและเพิ่มรายการ',desc_en:'Selection form and add flow',desc_zh:'选择表单与添加流程'},
- {src:'/ui/select-screen-2.png',title_th:'หน้าเลือกแบบเต็ม',title_en:'Selection full view',title_zh:'完整选择页',desc_th:'มุมมองรายการและสรุป',desc_en:'List and summary view',desc_zh:'列表与汇总视图'},
- {src:'/ui/member-chat-card.png',title_th:'การ์ดส่งข้อมูล',title_en:'Send data card',title_zh:'发送数据卡片',desc_th:'ตัวอย่างการ์ดส่งข้อมูลเข้าหลังบ้าน',desc_en:'Example card for sending data to admin',desc_zh:'发送数据到后台的示例卡片'},
- {src:'/ui/admin-report.png',title_th:'รายงานหลังบ้าน',title_en:'Admin report',title_zh:'后台报告',desc_th:'หน้ารายงานหลังบ้านตามภาพตัวอย่าง',desc_en:'Backoffice report screen from the reference',desc_zh:'后台报告参考界面'}
-];
-
 function initialDirectPage(){
  const params=new URLSearchParams(window.location.search);
  const view=params.get('view');
@@ -157,7 +148,7 @@ function Home({setPage,news,profile,lang,initialGrab=false}){
  const isStaff=['staff','admin','owner','super_admin'].includes(profile?.role),menus=customerMenus(lang),[grabOpen,setGrabOpen]=useState(initialGrab),[rideFrom,setRideFrom]=useState('home'),[homeAddress,setHomeAddress]=useState(()=>localStorage.getItem('LekHub_LekHub_home_address')||''),[grabMsg,setGrabMsg]=useState('');
  function saveHomeAddress(v){setHomeAddress(v);localStorage.setItem('LekHub_LekHub_home_address',v)}
  async function callGrab(){
-  const shop=T(lang,'บ้านต้นกล้า คาเฟ่ แอนด์ คิดส์ สเปซ','LekHub & Kids Space','LekHub & Kids Space');
+  const shop=T(lang,'LekHub คาเฟ่ แอนด์ คิดส์ สเปซ','LekHub & Kids Space','LekHub & Kids Space');
   const destination=rideFrom==='home'?shop:homeAddress.trim();
   if(rideFrom==='shop'&&!destination){setGrabMsg(T(lang,'กรุณาใส่ที่อยู่บ้านก่อน','Enter your home address first','请先填写家庭地址'));return}
   try{await navigator.clipboard?.writeText(destination)}catch(e){}
@@ -165,20 +156,13 @@ function Home({setPage,news,profile,lang,initialGrab=false}){
   window.open('https://www.grab.com/th/transport/','_blank','noopener')
  }
  return <><section className="hero"><img className="storeLogo homeStoreLogo" src="/LekHub-logo.png" alt="LekHub & Kids Space"/><span className="bubble">{profile?`⭐ ${profile.points_balance||0} ${T(lang,'แต้ม','points','积分')}`:T(lang,'สนุก • อร่อย • ได้แต้ม','Fun • Delicious • Earn points','好玩 • 美味 • 赚积分')}</span></section>
- <section className="news"><Newspaper/><div><b>{news[0]?translatedValue(localText(news[0],'title',lang),lang):T(lang,'ยินดีต้อนรับสู่บ้านต้นกล้า','Welcome to LekHub','欢迎来到 LekHub')}</b><p>{news[0]?translatedValue(localText(news[0],'body',lang),lang):T(lang,'กิจกรรมสนุกสำหรับเด็กและครอบครัว','Fun activities for kids and families','适合儿童和家庭的有趣活动')}</p></div></section>
+ <section className="news"><Newspaper/><div><b>{news[0]?translatedValue(localText(news[0],'title',lang),lang):T(lang,'ยินดีต้อนรับสู่LekHub','Welcome to LekHub','欢迎来到 LekHub')}</b><p>{news[0]?translatedValue(localText(news[0],'body',lang),lang):T(lang,'กิจกรรมสนุกสำหรับเด็กและครอบครัว','Fun activities for kids and families','适合儿童和家庭的有趣活动')}</p></div></section>
  <div className="homeMenuHead"><h2>{T(lang,'เมนูหลัก','Main Menu','主菜单')}</h2><small>{T(lang,'เลือกสิ่งที่ต้องการได้เลย','Choose what you need','请选择功能')}</small></div>
- <section className="homeIconGrid">{menus.map(([t,I,p,emoji])=><button className={'homeIconCard '+(p==='grab'?'grabTile':'')} key={p} onClick={()=>p==='grab'?setGrabOpen(true):setPage(p)}><span className="homeIconBubble">{I?<I/>:<span className="emojiIcon">{emoji}</span>}</span><b>{t}</b></button>)}</section><ScreenshotGallery lang={lang}/>
+ <section className="homeIconGrid">{menus.map(([t,I,p,emoji])=><button className={'homeIconCard '+(p==='grab'?'grabTile':'')} key={p} onClick={()=>p==='grab'?setGrabOpen(true):setPage(p)}><span className="homeIconBubble">{I?<I/>:<span className="emojiIcon">{emoji}</span>}</span><b>{t}</b></button>)}</section>
  <section className="quest"><div>🗺️</div><div><b>{T(lang,'ล่าคำตามลายแทงสมบัติ','Treasure Word Hunt','寻宝拼字游戏')}</b><p>{T(lang,'ตามคำใบ้ หา QR เก็บตัวอักษร แล้วเรียงคำให้ถูกต้อง','Follow clues, find QR codes and solve the word','根据提示寻找 QR，收集字母并拼出正确答案')}</p></div><button onClick={()=>setPage('game')}>{T(lang,'เริ่มเล่น','Play','开始游戏')}</button></section>
  <button className="adminEntry" onClick={()=>setPage('admin')}><ShieldCheck/><span><b>{T(lang,'หลังบ้านร้าน','Admin','后台管理')}</b><small>{isStaff?T(lang,'จัดการร้าน','Manage store','管理店铺'):T(lang,'เข้าสู่หน้าหลังบ้าน','Open admin','进入后台')}</small></span></button>
- {grabOpen&&<div className="homeGrabModal"><div className="homeGrabSheet"><button className="closeGrab" onClick={()=>setGrabOpen(false)}>×</button><div className="grabSheetHead"><div className="grabBigIcon">🚕</div><div><h3>{T(lang,'เรียก Grab','Call Grab','叫 Grab')}</h3><p>{T(lang,'เลือกต้นทาง แล้วระบบเตรียมปลายทางให้','Choose where you are now','选择你现在的位置')}</p></div></div><div className="grabMode"><button className={rideFrom==='home'?'active':''} onClick={()=>setRideFrom('home')}>🏠 {T(lang,'อยู่บ้าน → ไปร้าน','Home → Cafe','家 → 店')}</button><button className={rideFrom==='shop'?'active':''} onClick={()=>setRideFrom('shop')}>🌱 {T(lang,'อยู่ร้าน → กลับบ้าน','Cafe → Home','店 → 家')}</button></div><label className="grabHomeField"><span>{T(lang,'ที่อยู่บ้าน','Home address','家庭地址')}</span><textarea rows="2" value={homeAddress} onChange={e=>saveHomeAddress(e.target.value)} placeholder={T(lang,'บันทึกที่อยู่บ้านไว้ครั้งเดียว','Save your home address once','保存家庭地址')}/></label><div className="grabDestination"><small>{T(lang,'ปลายทาง','Destination','目的地')}</small><b>{rideFrom==='home'?T(lang,'บ้านต้นกล้า คาเฟ่ แอนด์ คิดส์ สเปซ','LekHub & Kids Space','LekHub & Kids Space'):(homeAddress||T(lang,'กรุณาใส่ที่อยู่บ้าน','Enter home address','请输入家庭地址'))}</b></div><button className="grabCallBtn" onClick={callGrab}>🚕 {T(lang,'เปิด Grab','Open Grab','打开 Grab')}</button>{grabMsg&&<p className="grabModalMsg">{grabMsg}</p>}</div></div>}
+ {grabOpen&&<div className="homeGrabModal"><div className="homeGrabSheet"><button className="closeGrab" onClick={()=>setGrabOpen(false)}>×</button><div className="grabSheetHead"><div className="grabBigIcon">🚕</div><div><h3>{T(lang,'เรียก Grab','Call Grab','叫 Grab')}</h3><p>{T(lang,'เลือกต้นทาง แล้วระบบเตรียมปลายทางให้','Choose where you are now','选择你现在的位置')}</p></div></div><div className="grabMode"><button className={rideFrom==='home'?'active':''} onClick={()=>setRideFrom('home')}>🏠 {T(lang,'อยู่บ้าน → ไปร้าน','Home → Cafe','家 → 店')}</button><button className={rideFrom==='shop'?'active':''} onClick={()=>setRideFrom('shop')}>🌱 {T(lang,'อยู่ร้าน → กลับบ้าน','Cafe → Home','店 → 家')}</button></div><label className="grabHomeField"><span>{T(lang,'ที่อยู่บ้าน','Home address','家庭地址')}</span><textarea rows="2" value={homeAddress} onChange={e=>saveHomeAddress(e.target.value)} placeholder={T(lang,'บันทึกที่อยู่บ้านไว้ครั้งเดียว','Save your home address once','保存家庭地址')}/></label><div className="grabDestination"><small>{T(lang,'ปลายทาง','Destination','目的地')}</small><b>{rideFrom==='home'?T(lang,'LekHub คาเฟ่ แอนด์ คิดส์ สเปซ','LekHub & Kids Space','LekHub & Kids Space'):(homeAddress||T(lang,'กรุณาใส่ที่อยู่บ้าน','Enter home address','请输入家庭地址'))}</b></div><button className="grabCallBtn" onClick={callGrab}>🚕 {T(lang,'เปิด Grab','Open Grab','打开 Grab')}</button>{grabMsg&&<p className="grabModalMsg">{grabMsg}</p>}</div></div>}
  </>}
-
-
-function ScreenshotGallery({lang}){
- const title=x=>lang==='en'?x.title_en:lang==='zh'?x.title_zh:x.title_th;
- const desc=x=>lang==='en'?x.desc_en:lang==='zh'?x.desc_zh:x.desc_th;
- return <section className="uiGalleryWrap"><div className="homeMenuHead"><h2>{T(lang,'ตัวอย่างหน้าจอ LekHub','LekHub UI Preview','LekHub 界面预览')}</h2><small>{T(lang,'ใช้ภาพอ้างอิงที่ส่งมาใส่ในระบบแล้ว','The provided reference screens are now shown in the app','已将提供的参考界面放入系统')}</small></div><div className="uiGallery">{LEKHUB_UI_REFERENCES.map(item=><figure className="uiShotCard" key={item.src}><img src={item.src} alt={title(item)}/><figcaption><b>{title(item)}</b><small>{desc(item)}</small></figcaption></figure>)}</div></section>
-}
 
 function Field({icon:Icon,label,...p}){return <label><span>{Icon&&<Icon/>}{label}</span><input {...p}/></label>}
 function Booking({profile,session,lang}){const[f,setF]=useState({name:profile?.display_name||'',phone:profile?.phone||'',date:'',time:'',size:2,note:''});const[msg,setMsg]=useState('');const[history,setHistory]=useState([]);useEffect(()=>{if(profile)setF(x=>({...x,name:x.name||profile.display_name||'',phone:x.phone||profile.phone||''}));if(session)sb.from('table_reservations').select('id,booking_code,booking_date,booking_time,party_size,status').order('created_at',{ascending:false}).limit(5).then(({data})=>setHistory(data||[]))},[profile,session]);async function go(e){e.preventDefault();setMsg(T(lang,'กำลังส่ง...','Sending...','正在提交...'));const{data,error}=await sb.rpc('create_table_booking',{p_restaurant_slug:'lekhub',p_customer_name:f.name,p_phone:f.phone,p_booking_date:f.date,p_booking_time:f.time,p_party_size:+f.size,p_note:f.note||null});if(error){setMsg(T(lang,'ส่งไม่สำเร็จ: ','Could not submit: ','提交失败：')+friendly(error.message,lang));return}setMsg(T(lang,`จองสำเร็จ เลขที่ ${data.booking_code} • รอร้านยืนยัน`,`Booked! ${data.booking_code} • Waiting for confirmation`,`预订成功 ${data.booking_code} • 等待店家确认`));if(session){const{data:h}=await sb.from('table_reservations').select('id,booking_code,booking_date,booking_time,party_size,status').order('created_at',{ascending:false}).limit(5);setHistory(h||[])}}return <Panel title={T(lang,'🍽️ จองโต๊ะ','🍽️ Book a table','🍽️ 预订座位')} sub={T(lang,'เลือกวัน เวลา จำนวนคน แล้วรอร้านยืนยัน','Choose date, time and guests, then wait for confirmation','选择日期、时间和人数，然后等待确认')}><form onSubmit={go}><Field label={T(lang,'ชื่อผู้จอง','Name','预订人姓名')} required value={f.name} onChange={e=>setF({...f,name:e.target.value})}/><Field icon={Phone} label={T(lang,'เบอร์ติดต่อ','Phone','联系电话')} required type="tel" inputMode="tel" value={f.phone} onChange={e=>setF({...f,phone:e.target.value})}/><div className="row"><Field icon={CalendarDays} label={T(lang,'วันที่','Date','日期')} required type="date" min={new Date().toISOString().slice(0,10)} value={f.date} onChange={e=>setF({...f,date:e.target.value})}/><Field icon={Clock} label={T(lang,'เวลา','Time','时间')} required type="time" value={f.time} onChange={e=>setF({...f,time:e.target.value})}/></div><Field icon={Users} label={T(lang,'จำนวนคน','Guests','人数')} required type="number" min="1" max="100" value={f.size} onChange={e=>setF({...f,size:e.target.value})}/><Field label={T(lang,'หมายเหตุ เช่น มีเด็กเล็ก / รถเข็น','Note e.g. child / stroller','备注，例如儿童 / 婴儿车')} value={f.note} onChange={e=>setF({...f,note:e.target.value})}/><button className="primary">{T(lang,'ส่งคำขอจองโต๊ะ','Request booking','提交预订')}</button><p className="msg">{msg}</p></form>{session&&<BookingHistory history={history} lang={lang}/>}</Panel>}
@@ -213,9 +197,9 @@ function Member({session,profile,lineProfile,reload,setPage,lang}){
   ensureMember();return()=>{active=false}
  },[session]);
  useEffect(()=>{if(profile)sb.from('point_transactions').select('id,amount,type,description,created_at').order('created_at',{ascending:false}).limit(8).then(({data})=>setPoints(data||[]))},[profile]);
- if(autoLoading||!session)return <Panel title={T(lang,'⭐ สมาชิกบ้านต้นกล้า','⭐ LekHub Member','⭐ LekHub 会员')} sub={T(lang,'กำลังเปิดข้อมูลสมาชิกจาก LINE...','Opening your LINE member card...','正在打开 LINE 会员卡...')}><div className="memberAutoLoading"><div className="memberAutoSpinner">⭐</div><b>{T(lang,'กำลังเปิดบัตรสมาชิก','Opening member card','正在打开会员卡')}</b><small>{T(lang,'ไม่ต้องกรอกชื่อหรือเบอร์โทร','No name or phone form required','无需填写姓名或电话')}</small>{msg&&<p className="msg">{msg}</p>}</div></Panel>;
- return <Panel title={T(lang,'⭐ บัตรสมาชิกบ้านต้นกล้า','⭐ LekHub Member Card','⭐ LekHub 会员卡')} sub={T(lang,'ชื่อสมาชิกมาจาก LINE อัตโนมัติ','Your member name comes from LINE automatically','会员姓名自动来自 LINE')}>
-  <section className="memberCard memberIdCard"><img className="memberIdPhoto" src={fallbackAvatar} alt="Member"/><div className="memberIdentity"><small>{T(lang,'สมาชิกบ้านต้นกล้า','LekHub Member','LekHub 会员')}</small><h3>{memberName}</h3><span>{T(lang,'สมาชิกผ่าน LINE OA','LINE OA Member','LINE OA 会员')}</span></div><strong>{profile?.points_balance||0}<small>{T(lang,'แต้ม','points','积分')}</small></strong></section>
+ if(autoLoading||!session)return <Panel title={T(lang,'⭐ สมาชิกLekHub','⭐ LekHub Member','⭐ LekHub 会员')} sub={T(lang,'กำลังเปิดข้อมูลสมาชิกจาก LINE...','Opening your LINE member card...','正在打开 LINE 会员卡...')}><div className="memberAutoLoading"><div className="memberAutoSpinner">⭐</div><b>{T(lang,'กำลังเปิดบัตรสมาชิก','Opening member card','正在打开会员卡')}</b><small>{T(lang,'ไม่ต้องกรอกชื่อหรือเบอร์โทร','No name or phone form required','无需填写姓名或电话')}</small>{msg&&<p className="msg">{msg}</p>}</div></Panel>;
+ return <Panel title={T(lang,'⭐ บัตรสมาชิกLekHub','⭐ LekHub Member Card','⭐ LekHub 会员卡')} sub={T(lang,'ชื่อสมาชิกมาจาก LINE อัตโนมัติ','Your member name comes from LINE automatically','会员姓名自动来自 LINE')}>
+  <section className="memberCard memberIdCard"><img className="memberIdPhoto" src={fallbackAvatar} alt="Member"/><div className="memberIdentity"><small>{T(lang,'สมาชิกLekHub','LekHub Member','LekHub 会员')}</small><h3>{memberName}</h3><span>{T(lang,'สมาชิกผ่าน LINE OA','LINE OA Member','LINE OA 会员')}</span></div><strong>{profile?.points_balance||0}<small>{T(lang,'แต้ม','points','积分')}</small></strong></section>
   <section className="memberReceipt"><div className="memberSectionHead"><ScanLine/><div><b>{T(lang,'สแกนบิล รับแต้ม','Scan receipt for points','扫描小票赚积分')}</b><small>{T(lang,'ถ่ายรูปใบเสร็จแล้วรับแต้มตามยอดเงิน','Scan a receipt and earn points automatically','扫描小票并按消费金额自动获得积分')}</small></div></div><Receipt session={session} profile={profile} reload={reload} embedded={true} lang={lang}/></section>
   <section className="history"><h3><Star/> {T(lang,'ประวัติแต้มล่าสุด','Recent points','最近积分记录')}</h3>{points.length?points.map(x=><div className="pointItem" key={x.id}><div><b>{x.description||x.type}</b><small>{new Date(x.created_at).toLocaleDateString(lang==='zh'?'zh-CN':lang==='en'?'en-GB':'th-TH')}</small></div><strong className={x.amount>=0?'plus':'minus'}>{x.amount>=0?'+':''}{x.amount}</strong></div>):<p className="empty">{T(lang,'ยังไม่มีรายการแต้ม','No point activity yet','暂无积分记录')}</p>}</section>
   <button type="button" className="adminMemberBtn memberAdminBottom" onClick={()=>setPage('admin')}><ShieldCheck/><span><b>{T(lang,'หลังบ้านร้าน','Admin','后台管理')}</b><small>{T(lang,'ใส่รหัสเพื่อเข้าหลังบ้าน','Enter admin password','输入后台密码')}</small></span></button>
@@ -510,7 +494,7 @@ function Admin({session,profile,forceAdmin=false,onExitAdmin}){
  
  async function ensureGameCampaign(){
   if(gameCampaign)return gameCampaign;
-  const{data,error}=await sb.from('game_campaigns').insert({restaurant_id:RESTAURANT_ID,name:'ล่าตัวอักษรบ้านต้นกล้า',description:'ตามหาตัวอักษรในร้าน แล้วนำมาต่อเป็นคำ',active:true,points_per_word:20}).select().single();
+  const{data,error}=await sb.from('game_campaigns').insert({restaurant_id:RESTAURANT_ID,name:'ล่าตัวอักษรLekHub',description:'ตามหาตัวอักษรในร้าน แล้วนำมาต่อเป็นคำ',active:true,points_per_word:20}).select().single();
   if(error){setMsg(friendly(error.message));return null}setGameCampaign(data);return data
  }
 
@@ -602,10 +586,10 @@ function Admin({session,profile,forceAdmin=false,onExitAdmin}){
  async function toggleGameSpot(id,active){const{error}=await sb.from('game_spots').update({active:!active}).eq('id',id);if(error){setMsg(friendly(error.message));return}setGameSpots(x=>x.map(r=>r.id===id?{...r,active:!active}:r))}
  async function toggleCampaign(){if(!gameCampaign)return;const{error}=await sb.from('game_campaigns').update({active:!gameCampaign.active}).eq('id',gameCampaign.id);if(error){setMsg(friendly(error.message));return}setGameCampaign({...gameCampaign,active:!gameCampaign.active})}
 
- if(session&&!profile)return <Panel title="🛠️ หลังบ้านบ้านต้นกล้า" sub="กำลังตรวจสอบสิทธิ์..."><div className="memberAutoLoading"><div className="memberAutoSpinner">🛠️</div><b>กำลังเปิดหลังบ้าน</b></div></Panel>;
+ if(session&&!profile)return <Panel title="🛠️ หลังบ้านLekHub" sub="กำลังตรวจสอบสิทธิ์..."><div className="memberAutoLoading"><div className="memberAutoSpinner">🛠️</div><b>กำลังเปิดหลังบ้าน</b></div></Panel>;
  if(!session||!allowed)return <Panel title="🔐 หลังบ้านร้าน" sub="สำหรับเจ้าของร้านและพนักงานที่ได้รับสิทธิ์เท่านั้น"><div className="adminDenied"><ShieldCheck/><h3>บัญชีนี้ยังไม่มีสิทธิ์หลังบ้าน</h3><p>ข้อมูลลูกค้าและรายการจองถูกป้องกันด้วยสิทธิ์ร้าน</p></div></Panel>;
  const today=new Date().toISOString().slice(0,10);
- return <Panel title="🛠️ หลังบ้านบ้านต้นกล้า" sub={`${profile?.display_name||profile?.role} • ${profile?.role}`}><section className="adminWrap">
+ return <Panel title="🛠️ หลังบ้านLekHub" sub={`${profile?.display_name||profile?.role} • ${profile?.role}`}><section className="adminWrap">
   <div className="adminTop">{msg&&<span className="adminMsg">{msg}</span>}<button type="button" className="exitAdminModeBtn" onClick={onExitAdmin}>ออกจากโหมดแอดมิน</button></div>
   
   <div className="adminTopTabs" role="tablist" aria-label="เมนูหลังบ้าน">
@@ -728,7 +712,7 @@ function Admin({session,profile,forceAdmin=false,onExitAdmin}){
 }
 
 function Coming({title}){return <Panel title={title||'กำลังพัฒนา'} sub="ระบบหลักกำลังเชื่อมต่อ"><div className="bigemoji">✨</div><p>ส่วนนี้จะทำต่อหลังจองโต๊ะและสมาชิกใช้งานเรียบร้อย</p></Panel>}
-function Panel({title,sub,children}){return <section className="panel"><header><img className="storeLogo panelStoreLogo" src="/LekHub-logo.png" alt="บ้านต้นกล้า Cafe & Kids Space"/><div className="panelTitle"><h1>{title}</h1><p>{sub}</p></div></header>{children}</section>}
+function Panel({title,sub,children}){return <section className="panel"><header><img className="storeLogo panelStoreLogo" src="/LekHub-logo.png" alt="LekHub Cafe & Kids Space"/><div className="panelTitle"><h1>{title}</h1><p>{sub}</p></div></header>{children}</section>}
 function friendly(m='',lang='th'){if(m.includes('Anonymous sign-ins are disabled'))return T(lang,'ต้องเปิด Anonymous Sign-Ins ใน Supabase ก่อน','Membership sign-in is temporarily unavailable','会员登录暂时不可用');if(m.includes('invalid_date'))return T(lang,'กรุณาเลือกวันที่วันนี้หรือวันถัดไป','Please choose today or a future date','请选择今天或之后的日期');if(m.includes('invalid_party_size'))return T(lang,'จำนวนคนไม่ถูกต้อง','Invalid number of guests','人数不正确');return m}
 function dateTH(d){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'})}
 function dateL(d,lang='th'){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString(lang==='zh'?'zh-CN':lang==='en'?'en-GB':'th-TH',{day:'numeric',month:'short',year:'numeric'})}
