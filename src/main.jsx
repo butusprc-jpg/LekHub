@@ -172,7 +172,7 @@ function Member({session,profile,lineProfile,reload,setPage,lang}){
  const[msg,setMsg]=useState(''),[points,setPoints]=useState([]),[autoLoading,setAutoLoading]=useState(!session);
  const isStaff=STAFF_ROLES.has(profile?.role);
  const memberName=lineProfile?.displayName||profile?.display_name||T(lang,'สมาชิก LINE','LINE Member','LINE 会员');
- const fallbackAvatar='/member-child-avatar.jpg';
+ const fallbackAvatar='/lekhub-avatar.jpg';
  useEffect(()=>{
   let active=true;
   async function ensureMember(){
