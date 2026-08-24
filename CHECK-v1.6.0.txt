@@ -1,0 +1,9 @@
+v1.6.0 STATIC CHECK PASS
+- Main menu converted to large icon tiles + title
+- Grab moved from member page to main menu empty tile
+- Grab flow opens as bottom-sheet modal
+- Home → Cafe and Cafe → Home retained
+- Home address retained in local storage
+- Grab removed from Member page
+- TH / EN / Chinese labels retained
+- CSS braces balanced

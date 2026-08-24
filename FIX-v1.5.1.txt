@@ -1,0 +1,5 @@
+v1.5.1 CSS BUILD FIX
+- Removed malformed CSS import residue at beginning of style.css.
+- Kept readable font stack for Thai / English / Chinese.
+- Replaced remaining Mali font shorthand declarations with safe font-family declarations.
+- CSS brace balance checked.

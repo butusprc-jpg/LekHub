@@ -1,0 +1,16 @@
+v1.5.8 STATIC CHECK PASS
+QR effects:
+- per-spot reveal character/emoji
+- cute / excited / scare
+- small / medium / large / fullscreen
+- pop / zoom / rush / shake
+- sound preset + volume
+- screen effect
+- config stored in existing game_spots.reveal_message JSON
+- success scan reads config and displays overlay
+Member Grab:
+- Home → Cafe and Cafe → Home modes
+- home address saved locally on device
+- destination copied before opening Grab
+- Grab transport page opens for pickup/dropoff confirmation
+Note: Grab's public Thailand flow requires the rider to confirm pickup/drop-off in Grab; no undocumented destination deep-link is used.

@@ -1,0 +1,26 @@
+Baan Tonkla v1.4.3 static UI audit: PASS
+
+LOGO
+- public/baan-tonkla-logo.png exists
+- Home uses /baan-tonkla-logo.png
+- Shared Panel header uses /baan-tonkla-logo.png
+- No old Vercel absolute logo URL remains
+
+CUSTOMER LANGUAGES
+- TH / EN / 中文 selector
+- Home: 3 languages
+- Booking: 3 languages
+- Private room: 3 languages
+- Member: 3 languages
+- Receipt scan: 3 languages
+- Treasure Word Hunt: 3 languages
+- Rewards: 3 languages
+- Raw visible Thai text outside translation function before Admin: 0
+- Admin remains Thai and language bar is hidden in Admin
+
+GAME ADMIN
+- ⚙️ ตั้งค่าเกม exists
+- LV controls exist
+- TH / English / 中文 clue fields exist
+
+Note: npm package installation is unavailable/timing out in this environment, so this audit verifies source/UI strings and assets rather than a local Vite build.

@@ -1,0 +1,13 @@
+v1.6.4 LINE MEMBER + AUTO ADMIN
+PASS static checks:
+- LIFF SDK included; no forced LINE login
+- LINE display name is used on member card when available
+- LINE userId/avatar are synced to the current Supabase profile when available
+- name and phone input fields removed from Member
+- fallback child portrait bundled for member card
+- staff/admin/owner/super_admin profile auto-routes to Admin
+- Admin button moved to bottom of Member and shown to staff roles
+- fullscreen + direct Rich Menu links retained
+
+Runtime dependency:
+For LINE displayName/userId on a fresh device, set VITE_LINE_LIFF_ID in Vercel and open via the LIFF endpoint. OA friendship alone does not expose LINE identity to a normal web URL.

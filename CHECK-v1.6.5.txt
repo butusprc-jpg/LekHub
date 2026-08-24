@@ -1,0 +1,9 @@
+v1.6.5 ADMIN NAV FIX
+PASS static checks:
+- internal navigation now allows admin
+- admin is not exposed as a public ?page= URL
+- Member bottom admin button navigates directly
+- Admin waits for profile before showing access denied
+- staff/admin/owner/super_admin permission check remains enforced
+- LIFF integration retained
+- fullscreen retained

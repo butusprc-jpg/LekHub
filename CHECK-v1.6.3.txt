@@ -1,0 +1,15 @@
+v1.6.3 AUTO FULL-SCREEN VIEWPORT
+PASS static checks:
+- viewport width=device-width
+- viewport-fit=cover
+- app fills 100vw and available viewport height
+- uses 100dvh / 100svh when supported
+- safe-area support for notched phones
+- horizontal overflow blocked
+- member no-login retained
+- Rich Menu direct links retained
+- CSS braces balanced
+
+Browser note:
+The app fills the entire available webpage viewport automatically.
+Mobile browsers/LINE may still show their own browser chrome.

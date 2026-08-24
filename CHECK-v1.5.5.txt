@@ -1,0 +1,12 @@
+v1.5.5 STATIC CHECK PASS
+- Removed character-name field
+- Removed rarity selector
+- Kept clue / English / Chinese / A-Z letter / points
+- Added Edit button and update flow
+- Added Cancel edit button
+- Added Delete button + confirmation
+- Kept Enable/Disable button
+- Increased clue list typography and spacing
+- Increased letter tile size
+- Mobile responsive action buttons
+- CSS braces balanced

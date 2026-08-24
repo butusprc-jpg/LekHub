@@ -1,0 +1,8 @@
+v1.5.7 STATIC CHECK PASS
+- Scan Order moved to second admin tab
+- Existing OCR scan screen retained
+- OCR progress retained
+- Copy/send-to-LINE functions retained
+- Admin tabs horizontally scroll on narrow screens
+- Dashboard shortcut added for Scan Order
+- CSS braces balanced

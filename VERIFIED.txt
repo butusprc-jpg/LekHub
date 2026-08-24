@@ -1,0 +1,2 @@
+v1.4.2 CHECKS
+game_tab_after_today: PASS\ndashboard_shortcut: PASS\ngame_section: PASS\nlv_1_to_10: PASS\nclue_th: PASS\nclue_en: PASS\nclue_zh: PASS\nlang_th: PASS\nlang_en: PASS\nlang_zh: PASS\nadmin_no_lang_bar: PASS\nambiguous_receipt_relation_fixed: PASS\n

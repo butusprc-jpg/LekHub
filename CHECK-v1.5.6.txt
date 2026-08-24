@@ -1,0 +1,8 @@
+v1.5.6 STATIC CHECK PASS
+- Future LV tabs disabled
+- Current LV enabled
+- Completed LV tabs remain available
+- Locked LV shows lock icon and disabled styling
+- Unlock level derives from accepted word submissions for current campaign
+- Successful answer reloads progress so next LV unlocks
+- CSS braces balanced

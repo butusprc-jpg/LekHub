@@ -1,0 +1,11 @@
+Baan Tonkla Cafe WebApp v1.7.0
+ADMIN PASSWORD GATE CHECK
+
+PASS: JSX/JS syntax parsed with TypeScript compiler (tsc --noEmit --noResolve).
+PASS: Supabase RPC claim_baan_tonkla_admin is installed.
+PASS: Home admin entry routes through password gate.
+PASS: Member admin entry routes through password gate.
+PASS: Password modal exists.
+PASS: Successful admin device is remembered in localStorage.
+PASS: Old LINE-linked admin button check removed.
+PASS: Exit admin mode button clears remembered device state.

@@ -1,0 +1,14 @@
+v1.5.3 GAME UI CHECK PASS
+- Real in-app game screen redesigned
+- Treasure/adventure hero with decorative UI graphics
+- Current LV + found/total + progress bar
+- Clue cards with found/not-found states
+- QR scan area
+- Letter bag with placeholders
+- English-only answer
+- Treasure solve panel
+- Clown popup for unavailable QR flow
+- TH / EN / Chinese copy retained
+- Store logo asset retained
+- CSS brace balance passed
+- No separately generated image assets added

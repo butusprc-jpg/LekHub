@@ -1,0 +1,13 @@
+v1.6.1 DIRECT LINK CHECK
+PASS static checks:
+- ?page=booking opens booking
+- ?page=event opens private room
+- ?page=member opens member
+- ?page=rewards opens points/rewards
+- ?page=game opens game
+- ?page=grab opens home with Grab panel immediately
+- internal navigation updates ?page= without reload
+- unknown page falls back to home
+- CSS braces balanced
+
+Note: static/source checks only; production Vercel deployment not verified in this file.

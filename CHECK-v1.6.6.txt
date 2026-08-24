@@ -1,0 +1,12 @@
+v1.6.6 VERIFIED LINE ADMIN AUTH
+PASS static checks:
+- LIFF access token captured
+- access token sent to Supabase Edge Function line-identity for server verification
+- one-time bind_admin token supported
+- Member admin button always sits at the bottom and verifies LINE before opening Admin
+- linked staff/admin/owner/super_admin sessions are upgraded server-side
+- internal Admin navigation retained
+- fullscreen and LIFF SDK retained
+
+Required runtime config:
+VITE_LINE_LIFF_ID must be set in Vercel. Without a LIFF ID, LINE cannot expose a verifiable access token to the web app.

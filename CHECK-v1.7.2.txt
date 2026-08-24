@@ -1,0 +1,11 @@
+STATIC/PARSER CHECK PASS
+PASS button_opens_camera
+PASS uses_getUserMedia
+PASS rear_camera
+PASS video_modal
+PASS qr_detector
+PASS qr_calls_rpc
+PASS close_stops_tracks
+PASS manual_fallback
+PASS css_balanced
+Camera hardware cannot be physically exercised in container.

@@ -1,0 +1,10 @@
+v1.5.2 CHECK PASS
+- Customer text black
+- Known Chinese/English welcome sample translation fallback
+- Game answer input English A-Z only
+- Thai clue auto-translates to English and Simplified Chinese on blur
+- Manual translate button included
+- English / Chinese fields remain editable
+- Admin remains Thai only
+- Logo retained
+- CSS balanced and clean prefix

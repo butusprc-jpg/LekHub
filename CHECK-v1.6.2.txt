@@ -1,0 +1,13 @@
+v1.6.2 MEMBER NO-LOGIN
+PASS static checks:
+- Member page no longer shows signup/login form
+- If no Supabase session, anonymous member session is created automatically
+- source=line_oa metadata attached to silent session
+- Member profile edit remains available
+- Points history remains available
+- Rich Menu direct links retained
+- CSS braces balanced
+
+Important:
+This removes the extra login/signup screen. It does not yet identify the person by LINE user ID.
+True LINE identity linking would require LIFF / LINE Login configuration.

@@ -1,0 +1,13 @@
+v1.5.0 LANGUAGE + FONT AUDIT
+PASS source audit:
+- Logo local asset retained
+- Customer language selector TH / EN / 中文
+- Customer static UI translated
+- News/reward/game dynamic values use localized fields when available
+- Known sample Thai values translated for EN/中文
+- Customer raw Thai JSX text nodes outside translation helpers: 0
+- Admin remains Thai only
+- Readable universal font stack applied: Noto Sans Thai / Noto Sans SC / Noto Sans
+- Game settings retained
+
+Important: arbitrary admin-created text cannot be magically translated without EN/ZH values or a translation service. For dynamic fields, the app now prefers *_th / *_en / *_zh columns where present and falls back to the original value.

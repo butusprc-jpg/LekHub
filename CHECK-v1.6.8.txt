@@ -1,0 +1,9 @@
+v1.6.8 ADMIN TASK ASSIGNMENT
+PASS static checks:
+- Admin task DB integration
+- Admin list loaded for assignee selector
+- Button: มอบหมายงาน
+- Assignee: specific admin or all admins
+- Task due date/details
+- Mark done/reopen/delete
+- Existing LINE/LIFF and fullscreen retained

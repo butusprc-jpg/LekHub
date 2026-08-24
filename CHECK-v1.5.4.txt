@@ -1,0 +1,16 @@
+v1.5.4 CHECK PASS
+1) Save clue:
+- auto selects next unused point
+- English A-Z single letter enforced
+- missing EN/ZH translated before save
+- visible success/error status
+2) Language:
+- English uses clue_en only
+- Chinese uses clue_zh only
+- no fallback to Thai on customer game page
+3) Game UI:
+- premium mobile adventure polish
+- sticky QR scanner
+- richer level buttons, clue trail, letter animation, glowing treasure state
+Database:
+- Existing LV1 clue EN/ZH values were backfilled separately in Supabase.
