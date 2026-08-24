@@ -87,8 +87,8 @@ async function verifyLineIdentity(bindToken=''){
  return data||{ok:false,reason:'empty_identity_result'};
 }
 function App(){
- const[page,setPage]=useState(()=>initialDirectPage()),[news,setNews]=useState([]),[session,setSession]=useState(null),[profile,setProfile]=useState(null),[lineProfile,setLineProfile]=useState(()=>cachedLineProfile()),[lang,setLang]=useState(()=>localStorage.getItem('baan_LekHub_lang')||'th'),[adminGateOpen,setAdminGateOpen]=useState(false),[adminPassword,setAdminPassword]=useState(''),[adminGateMsg,setAdminGateMsg]=useState(''),[adminGateBusy,setAdminGateBusy]=useState(false),[adminDevice,setAdminDevice]=useState(()=>localStorage.getItem('baan_LekHub_admin_device')==='1');
- useEffect(()=>{localStorage.setItem('baan_LekHub_lang',lang);document.documentElement.lang=lang==='zh'?'zh-CN':lang},[lang]);
+ const[page,setPage]=useState(()=>initialDirectPage()),[news,setNews]=useState([]),[session,setSession]=useState(null),[profile,setProfile]=useState(null),[lineProfile,setLineProfile]=useState(()=>cachedLineProfile()),[lang,setLang]=useState(()=>localStorage.getItem('LekHub_LekHub_lang')||'th'),[adminGateOpen,setAdminGateOpen]=useState(false),[adminPassword,setAdminPassword]=useState(''),[adminGateMsg,setAdminGateMsg]=useState(''),[adminGateBusy,setAdminGateBusy]=useState(false),[adminDevice,setAdminDevice]=useState(()=>localStorage.getItem('LekHub_LekHub_admin_device')==='1');
+ useEffect(()=>{localStorage.setItem('LekHub_LekHub_lang',lang);document.documentElement.lang=lang==='zh'?'zh-CN':lang},[lang]);
  async function loadProfile(s=session){if(!s?.user){setProfile(null);return}const{data}=await sb.from('profiles').select('*').eq('id',s.user.id).maybeSingle();setProfile(data||null)}
  useEffect(()=>{
   sb.from('news_posts').select('*').eq('published',true).order('pinned',{ascending:false}).limit(5).then(({data})=>setNews(data||[]));
@@ -132,21 +132,21 @@ function App(){
    activeSession=data.session;setSession(activeSession);
    await new Promise(r=>setTimeout(r,250));
   }
-  const{data,error}=await sb.rpc('claim_baan_LekHub_admin',{p_password:adminPassword});
+  const{data,error}=await sb.rpc('claim_LekHub_LekHub_admin',{p_password:adminPassword});
   if(error){setAdminGateMsg('ตรวจรหัสไม่สำเร็จ กรุณาลองใหม่');setAdminGateBusy(false);return}
   if(!data?.success){setAdminGateMsg(data?.reason==='wrong_password'?'รหัสผ่านไม่ถูกต้อง':'เปิดสิทธิ์แอดมินไม่สำเร็จ');setAdminGateBusy(false);return}
-  localStorage.setItem('baan_LekHub_admin_device','1');setAdminDevice(true);
+  localStorage.setItem('LekHub_LekHub_admin_device','1');setAdminDevice(true);
   await loadProfile(activeSession);
   setAdminGateBusy(false);setAdminGateOpen(false);setAdminPassword('');setAdminGateMsg('');openPage('admin');window.scrollTo({top:0,behavior:'auto'});
  }
- function exitAdminMode(){localStorage.removeItem('baan_LekHub_admin_device');setAdminDevice(false);openPage('home')}
+ function exitAdminMode(){localStorage.removeItem('LekHub_LekHub_admin_device');setAdminDevice(false);openPage('home')}
  return <main>{page!=='admin'&&<LangBar lang={lang} setLang={setLang}/>}
  {page!=='home'&&<button className="back" onClick={()=>goPage('home')}><ArrowLeft/> {T(lang,'กลับหน้าหลัก','Home','返回首页')}</button>}
  {page==='home'?<Home setPage={goPage} news={news} profile={profile} lang={lang} initialGrab={initialGrabOpen()}/>:page==='booking'?<Booking profile={profile} session={session} lang={lang}/>:page==='event'?<Event profile={profile} lang={lang}/>:page==='member'?<Member session={session} profile={profile} lineProfile={lineProfile} reload={()=>loadProfile()} setPage={goPage} lang={lang}/>:page==='game'?<Game session={session} lang={lang}/>:page==='rewards'?<Rewards session={session} profile={profile} reload={()=>loadProfile()} lang={lang}/>:page==='admin'?<Admin session={session} profile={profile} forceAdmin={adminDevice} onExitAdmin={exitAdminMode}/>:<Coming title={menus.find(x=>x[2]===page)?.[0]}/>}{adminGateOpen&&<div className="adminPassOverlay" role="dialog" aria-modal="true" aria-label="ใส่รหัสหลังบ้าน"><form className="adminPassModal" onSubmit={unlockAdmin}><button type="button" className="adminPassClose" onClick={()=>{if(!adminGateBusy)setAdminGateOpen(false)}}>×</button><div className="adminPassIcon"><ShieldCheck/></div><h3>เข้าสู่หลังบ้าน</h3><p>ใส่รหัสผ่านแอดมิน</p><input autoFocus type="password" value={adminPassword} onChange={e=>setAdminPassword(e.target.value)} placeholder="รหัสผ่าน" autoComplete="current-password"/><button className="primary" disabled={adminGateBusy}>{adminGateBusy?'กำลังตรวจ...':'เข้าหลังบ้าน'}</button>{adminGateMsg&&<div className="adminPassMsg">{adminGateMsg}</div>}<small>ใส่ถูกครั้งเดียว เครื่องนี้จะจำว่าเป็นแอดมิน</small></form></div>}</main>
 }
 function Home({setPage,news,profile,lang,initialGrab=false}){
- const isStaff=['staff','admin','owner','super_admin'].includes(profile?.role),menus=customerMenus(lang),[grabOpen,setGrabOpen]=useState(initialGrab),[rideFrom,setRideFrom]=useState('home'),[homeAddress,setHomeAddress]=useState(()=>localStorage.getItem('baan_LekHub_home_address')||''),[grabMsg,setGrabMsg]=useState('');
- function saveHomeAddress(v){setHomeAddress(v);localStorage.setItem('baan_LekHub_home_address',v)}
+ const isStaff=['staff','admin','owner','super_admin'].includes(profile?.role),menus=customerMenus(lang),[grabOpen,setGrabOpen]=useState(initialGrab),[rideFrom,setRideFrom]=useState('home'),[homeAddress,setHomeAddress]=useState(()=>localStorage.getItem('LekHub_LekHub_home_address')||''),[grabMsg,setGrabMsg]=useState('');
+ function saveHomeAddress(v){setHomeAddress(v);localStorage.setItem('LekHub_LekHub_home_address',v)}
  async function callGrab(){
   const shop=T(lang,'บ้านต้นกล้า คาเฟ่ แอนด์ คิดส์ สเปซ','LekHub & Kids Space','LekHub & Kids Space');
   const destination=rideFrom==='home'?shop:homeAddress.trim();
