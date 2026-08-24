@@ -303,3 +303,14 @@ img,video,canvas,svg{max-width:100%}
 
 /* v1.7.2 real game camera */
 .gameScannerModal{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);display:grid;place-items:end center}.gameScannerSheet{width:min(100%,560px);background:#fff;border-radius:24px 24px 0 0;padding:16px;box-sizing:border-box;max-height:94dvh;overflow:auto}.gameScannerHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}.gameScannerHead>div{display:flex;flex-direction:column;gap:2px}.gameScannerHead b{font-size:18px}.gameScannerHead small{font-size:12px;color:#626b64}.gameScannerHead button{border:0;background:#eef1ed;border-radius:999px;width:36px;height:36px;font-size:25px;cursor:pointer}.gameVideoWrap{width:100%;aspect-ratio:1/1;background:#111;border-radius:18px;overflow:hidden;position:relative}.gameVideoWrap:after{content:'';position:absolute;inset:18%;border:3px solid rgba(255,255,255,.9);border-radius:16px;box-shadow:0 0 0 999px rgba(0,0,0,.18);pointer-events:none}.gameVideoWrap video{width:100%;height:100%;object-fit:cover}.gameScannerError{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:#fff1f0;color:#9d251e;font-weight:800;font-size:13px}.gameScannerClose{width:100%;margin-top:12px;border:0;border-radius:14px;padding:12px;font-weight:900;background:#273a2b;color:#fff}.manualQrSubmit{background:#eef4ec!important;color:#244d2a!important}
+
+
+/* ===== LekHub UI reference gallery ===== */
+.uiGalleryWrap{margin:8px 0 18px}
+.uiGallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.uiShotCard{margin:0;border:1px solid #e6e6e6;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 10px 26px rgba(0,0,0,.06)}
+.uiShotCard img{display:block;width:100%;height:auto;background:#f6f6f6}
+.uiShotCard figcaption{display:flex;flex-direction:column;gap:4px;padding:12px 14px 14px}
+.uiShotCard b{font-size:16px;color:#111}
+.uiShotCard small{font-size:12px;color:#555;line-height:1.45}
+@media(max-width:720px){.uiGallery{grid-template-columns:1fr}.uiShotCard{border-radius:18px}}
