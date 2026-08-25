@@ -4,7 +4,7 @@ import { initLIFF, type LiffClient, type LineProfile } from "../../../lib/liff"
 import { createClient } from "../../../lib/supabase/client"
 
 type Item={value:string;category:string;category_label:string;heart:number}
-const types=[["3topmix","3 ตัวบน + สลับ"],["3top","3 ตัวบน"],["2top","2 ตัวบน"],["single","วิ่งบน"],["bottom","2 ตัวล่าง"]]
+const types=[["3topmix","3 บนสลับ"],["3top","3 บน"],["2top","2 บน"],["single","วิ่งบน"],["bottom","2 ล่าง"]]
 
 export default function PlayPage(){
  const [profile,setProfile]=useState<LineProfile|null>(null),[liff,setLiff]=useState<LiffClient|null>(null)
@@ -78,35 +78,36 @@ export default function PlayPage(){
 
  function add(){
   const number=value.replace(/\D/g,"")
-  const rawParts=amount.split(/[x×]/i).map(x=>x.trim()).filter(Boolean)
-  const parts=rawParts.map(x=>Number(x))
+  const amountText=amount.replace(/\D/g,"")
 
-  if(category==="single"&&!/^\d$/.test(number)){
-   setMessage("วิ่งบนใส่ได้แค่เลขเดียว")
-   return
-  }
-
-  if(category!=="single"&&!/^\d{1,6}$/.test(number)){
+  if(category==="single"){
+   if(!/^\d$/.test(number)){
+    setMessage("วิ่งบนใส่ได้แค่เลขเดียว")
+    return
+   }
+  }else if(!/^\d{1,6}$/.test(number)){
    setMessage("กรุณากรอกเลขให้ครบ")
    return
   }
 
-  if(!rawParts.length||parts.some((n,i)=>!/^\d+$/.test(rawParts[i])||n<=0||n%10!==0)){
+  if(!/^\d+0$/.test(amountText)||Number(amountText)<=0){
    setMessage("ยอดต้องเป็นจำนวนเต็มและลงท้ายด้วย 0 เท่านั้น")
    return
   }
-  const added:Item[]=category==="3topmix"&&parts.length>1
-   ?[
-     {value:number,category:"3top",category_label:"3 ตัวบน",heart:parts[0]},
-     {value:number,category:"3topmix",category_label:"3 ตัวสลับ",heart:parts[1]}
-    ]
-   :[{value:number,category,category_label:types.find(x=>x[0]===category)?.[1]||category,heart:parts[0]}]
-  setItems(v=>[...v,...added])
+
+  const heart=Number(amountText)
+  const added:Item={
+   value:number,
+   category,
+   category_label:types.find(x=>x[0]===category)?.[1]||category,
+   heart
+  }
+
+  setItems(current=>[...current,added])
   setValue("")
   setAmount("")
   setMessage("")
  }
-
  function openReview(){
   if(!items.length){
    setMessage("กรุณาเพิ่มรายการก่อนทบทวน")
@@ -213,13 +214,14 @@ export default function PlayPage(){
   </section>
 
   <section className="pick-card">
-   <label>ประเภท<select value={category} onChange={e=>setCategory(e.target.value)}>
+   <label>ประเภท<select value={category} onChange={e=>{setCategory(e.target.value);setValue("");setMessage("")}}>
     {types.map(([k,n])=><option key={k} value={k}>{n}</option>)}
    </select></label>
-   <label>เลข<input inputMode="numeric" maxLength={category==="single"?1:6} value={value} onChange={e=>setValue(e.target.value.replace(/\D/g,"").slice(0,category==="single"?1:6))}/></label>
-   <label>ยอด<input inputMode="numeric" value={amount} onChange={e=>setAmount(e.target.value.replace(/[^0-9x×]/gi,""))}/></label>
+   <label>เลข<input inputMode="numeric" pattern="[0-9]*" maxLength={category==="single"?1:6} value={value} onChange={e=>{setValue(e.target.value.replace(/\D/g,"").slice(0,category==="single"?1:6));setMessage("")}}/></label>
+   <label>ยอด<input inputMode="numeric" pattern="[0-9]*" value={amount} onChange={e=>{setAmount(e.target.value.replace(/\D/g,""));setMessage("")}}/></label>
    
    <button type="button" className="red-action" onClick={add}>＋ เพิ่ม</button>
+   {message&&<p className="play-message">{message}</p>}
   </section>
 
   {!!items.length&&<section className="picked-list">
@@ -238,7 +240,6 @@ export default function PlayPage(){
     </label>
     <button type="button" className="red-action" onClick={openReview}>ทบทวนก่อนส่ง</button>
    </div>
-   {message&&<p className="play-message">{message}</p>}
   </section>
 
   {reviewing&&<div className="review-overlay" role="dialog" aria-modal="true">
