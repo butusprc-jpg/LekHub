@@ -1,0 +1,4 @@
+LekHub-FULL-AUTH-BUILD-FIX-v2
+Base: LekHub-FULL-AUTH-BUILD-FIX.zip
+Versioned checkpoint.
+Next step: run real build and fix reported errors.

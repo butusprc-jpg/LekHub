@@ -1,0 +1,4 @@
+LekHub-FULL-AUTH-BUILD-FIX
+Base: LekHub-FULL-AUTH-READY-FIX-v2.zip
+Checkpoint after project structure cleanup.
+Next step: run npm install and npm run build in deployment environment.

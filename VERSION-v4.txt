@@ -1,0 +1,4 @@
+LekHub-FULL-AUTH-BUILD-FIX-v4
+Base: LekHub-FULL-AUTH-BUILD-FIX-v3.zip
+Build cleanup checkpoint.
+Requires real npm install/build verification before production.

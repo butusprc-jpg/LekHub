@@ -1,0 +1,4 @@
+LekHub-FULL-AUTH-BUILD-FIX-FINAL-v2
+Base: LekHub-FULL-AUTH-BUILD-FIX-FINAL-v1.zip
+Prepared as next checkpoint.
+Requires actual npm install and npm run build verification.

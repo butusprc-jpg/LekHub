@@ -1,0 +1,4 @@
+LekHub-FULL-AUTH-BUILD-FIX-v3
+Base: LekHub-FULL-AUTH-BUILD-FIX-v2.zip
+Checkpoint for continued build/auth cleanup.
+Next step: validate with actual npm install and build output.

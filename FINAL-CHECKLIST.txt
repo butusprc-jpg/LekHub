@@ -1,0 +1,9 @@
+LekHub-FULL-AUTH-BUILD-FIX-FINAL-v1
+
+Base: LekHub-FULL-AUTH-BUILD-FIX-v4.zip
+
+Final cleanup checkpoint.
+Before production deploy, run:
+npm install
+npm run build
+and fix any environment-specific errors.

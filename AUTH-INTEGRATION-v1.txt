@@ -1,0 +1,1 @@
+Integrated Supabase Auth from v11 into LekHub base.\n

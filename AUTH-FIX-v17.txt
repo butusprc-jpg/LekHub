@@ -1,0 +1,14 @@
+LekHub Auth Fix v17
+
+- Supabase SSR browser and server clients now share cookie-based sessions.
+- /admin and every nested /admin/* route require a signed-in user.
+- Admin authorization uses the existing public.admin_profiles table.
+- Only active admin profiles can access the back office.
+- Member, play, rules, and public report routes remain public.
+- Uses NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY with legacy ANON_KEY fallback.
+- Dependencies are pinned and package-lock.json is included.
+- Production build verified with Next.js 15.5.23.
+
+Required Vercel environment variables:
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY

@@ -1,21 +1,21 @@
 {
   "name": "lekhub",
-  "version": "1.7.2",
-  "private": true,
+  "version": "1.0.0",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build"
+    "dev": "next dev",
+    "build": "next build"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.112.3",
-    "@vitejs/plugin-react": "6.1.0",
-    "vite": "8.2.2",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "lucide-react": "1.33.0"
+    "@supabase/ssr": "0.12.5",
+    "@supabase/supabase-js": "2.112.4",
+    "next": "15.5.23",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "typescript": "5.9.2"
   },
-  "devDependencies": {},
-  "engines": {
-    "node": "24.x"
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
   }
 }

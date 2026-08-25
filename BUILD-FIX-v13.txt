@@ -1,0 +1,1 @@
+V13 auth build patch: guarded Supabase env and cookies handling for Vercel Next 15.
