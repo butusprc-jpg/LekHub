@@ -16,6 +16,8 @@ export default function PlayPage(){
  const [cashPercent,setCashPercent]=useState(0)
  const [categoryAmounts,setCategoryAmounts]=useState<Record<string,number>>({})
  const [closeTime,setCloseTime]=useState("")
+ const [attachment,setAttachment]=useState<File|null>(null)
+ const [attachmentPreview,setAttachmentPreview]=useState("")
 
  useEffect(()=>{
   localStorage.removeItem("lekhub_member_name")
@@ -163,13 +165,33 @@ export default function PlayPage(){
   const memberName=profile?.displayName||"สมาชิก"
   const memberUserId=profile?.userId||fallbackUserId()
   const code=`SL-${Date.now().toString(36).toUpperCase()}`
+  let attachmentUrl:string|null=null
+
+  if(attachment){
+   const ext=(attachment.name.split(".").pop()||"jpg").toLowerCase()
+   const safeExt=["jpg","jpeg","png","webp"].includes(ext)?ext:"jpg"
+   const path=`${memberUserId}/${Date.now()}-${crypto.randomUUID()}.${safeExt}`
+   const supabase=createClient()
+   const {error:uploadError}=await supabase.storage.from("lekhub-uploads").upload(path,attachment,{
+    cacheControl:"3600",
+    upsert:false,
+    contentType:attachment.type||"image/jpeg",
+   })
+   if(uploadError){
+    setMessage(`อัพโหลดภาพไม่สำเร็จ: ${uploadError.message}`)
+    setSending(false)
+    return
+   }
+   attachmentUrl=supabase.storage.from("lekhub-uploads").getPublicUrl(path).data.publicUrl
+  }
 
   const {data,error}=await createClient().rpc("submit_lekhub_submission",{
    p_reference_code:code,
    p_line_user_id:memberUserId,
    p_member_name:memberName,
    p_member_avatar:profile?.pictureUrl||null,
-   p_items:items.map(x=>({...x,cash}))
+   p_items:items.map(x=>({...x,cash})),
+   p_attachment_url:attachmentUrl
   })
 
   if(error||!data?.success){
@@ -219,6 +241,8 @@ export default function PlayPage(){
   setItems([])
   setValue("")
   setAmount("")
+  setAttachment(null)
+  setAttachmentPreview("")
   setReviewing(false)
   setMessage(`ส่งเรียบร้อย รหัส ${data.reference_code||code}`)
   setSending(false)
@@ -237,7 +261,7 @@ export default function PlayPage(){
 
   <section className="line-person">
    {profile?.pictureUrl?<img src={profile.pictureUrl} alt="รูปโปรไฟล์ LINE"/>:<div className="line-avatar">LINE</div>}
-   <b>{profile?.displayName||"กำลังโหลดชื่อ LINE..."}</b>
+   <b>{profile?.displayName||"กำลังโหลดชื่อ LINE..."}{blockedValues.length?<small style={{marginLeft:"8px",fontWeight:500}}>{blockedValues.join(" ")}</small>:null}</b>
    <strong>{open?"เปิดรับรายการ":"ปิดรับแล้ว"}</strong>
   </section>
 
@@ -263,8 +287,6 @@ export default function PlayPage(){
    /></label>
    <label>ยอด<input inputMode="numeric" pattern="[0-9]*" value={amount} onChange={e=>{setAmount(e.target.value.replace(/\D/g,""));setMessage("")}}/></label>
    
-   {!!blockedValues.length&&<small style={{display:"block",marginBottom:"8px"}}>งด: {blockedValues.join(", ")}</small>}
-   {closeTime&&<small style={{display:"block",marginBottom:"8px"}}>ปิดรับเวลา {closeTime}</small>}
    <button type="button" className="red-action" onClick={add}>＋ เพิ่ม</button>
    {message&&<p className="play-message">{message}</p>}
   </section>
@@ -299,6 +321,20 @@ export default function PlayPage(){
     </label>
     <button type="button" className="red-action" onClick={openReview}>ทบทวนก่อนส่ง</button>
    </div>
+   <label style={{display:"block",marginTop:"12px"}}>
+    <span style={{display:"block",fontWeight:700,marginBottom:"6px"}}>อัพโหลดภาพ</span>
+    <input
+     type="file"
+     accept="image/jpeg,image/png,image/webp"
+     onChange={e=>{
+      const file=e.target.files?.[0]||null
+      if(file&&file.size>5*1024*1024){setMessage("รูปต้องไม่เกิน 5 MB");e.currentTarget.value="";return}
+      setAttachment(file)
+      setAttachmentPreview(file?URL.createObjectURL(file):"")
+     }}
+    />
+   </label>
+   {attachmentPreview&&<img src={attachmentPreview} alt="ภาพที่แนบ" style={{width:"100%",maxHeight:"220px",objectFit:"contain",marginTop:"10px",borderRadius:"10px"}}/>}
   </section>
 
   {reviewing&&<div className="review-overlay" role="dialog" aria-modal="true">

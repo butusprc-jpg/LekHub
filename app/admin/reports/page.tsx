@@ -14,7 +14,16 @@ type Submission = {
   total:number
   created_at:string
   imported_at?:string|null
+  attachment_url?:string|null
   items:SubmissionItem[]
+}
+
+function dateTime(value:string){
+ return new Intl.DateTimeFormat("th-TH",{
+  timeZone:"Asia/Bangkok",
+  day:"2-digit",month:"2-digit",year:"numeric",
+  hour:"2-digit",minute:"2-digit"
+ }).format(new Date(value))
 }
 
 export default function ReportsPage() {
@@ -119,7 +128,7 @@ export default function ReportsPage() {
             style={focusId===row.id?{outline:"3px solid #C40000",outlineOffset:"2px"}:undefined}
           >
           <div className="submission-head">
-            <div><h2>{row.member_name}</h2><small>{row.reference_code}</small></div>
+            <div><h2>{row.member_name}</h2><small>{row.reference_code}</small><small style={{display:"block"}}>{dateTime(row.created_at)}</small></div>
             <b>{row.status}</b>
           </div>
 
@@ -132,6 +141,7 @@ export default function ReportsPage() {
           <div className="submission-total">
             <span>{row.item_count} รายการ</span><b>รวม {Number(row.total).toLocaleString()}</b>
           </div>
+          {row.attachment_url&&<div style={{padding:"0 14px 14px"}}><a href={row.attachment_url} target="_blank" rel="noreferrer">ดูภาพแนบ</a></div>}
 
           <div className="submission-actions">
             <button type="button" disabled={working===row.id} onClick={()=>setStatus(row.id,"pending")}>รอตรวจ</button>

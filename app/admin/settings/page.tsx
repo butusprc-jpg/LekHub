@@ -23,6 +23,7 @@ export default function SettingsPage(){
  const [closeTime,setCloseTime]=useState("23:59")
  const [amounts,setAmounts]=useState<Record<string,string>>({})
  const [blocked,setBlocked]=useState("")
+ const [blockedEnabled,setBlockedEnabled]=useState(true)
  const [cashPercent,setCashPercent]=useState("0")
  const [loading,setLoading]=useState(true)
  const [saving,setSaving]=useState(false)
@@ -42,6 +43,7 @@ export default function SettingsPage(){
    for(const [key] of TYPE_LABELS)next[key]=String(Number(data?.category_amounts?.[key]||0)||"")
    setAmounts(next)
    setBlocked(Array.isArray(data?.blocked_values)?data.blocked_values.join(", "):"")
+   setBlockedEnabled(Boolean(data?.blocked_enabled))
    setCashPercent(String(Number(data?.cash_percent||0)))
    setMessage(`เข้าระบบแล้ว: ${current.displayName}`)
   }catch(caught){
@@ -71,6 +73,7 @@ export default function SettingsPage(){
     p_close_time:closeTime||null,
     p_category_amounts:categoryAmounts,
     p_cash_percent:pct,
+    p_blocked_enabled:blockedEnabled,
    })
    if(error)throw new Error(error.message)
    if(!data?.success)throw new Error("บันทึกการตั้งค่าไม่สำเร็จ")
@@ -134,11 +137,16 @@ export default function SettingsPage(){
      </div>
     </div>
 
-    <label>
-     <b>เลขห้ามเลือก</b>
-     <small style={{display:"block"}}>ใส่หลายเลขได้ คั่นด้วยเว้นวรรคหรือเครื่องหมายจุลภาค</small>
-     <textarea value={blocked} rows={3} onChange={e=>setBlocked(e.target.value)} placeholder="เช่น 123, 45, 7"/>
-    </label>
+    <div>
+     <label className="toggle-row">
+      <div><b>ห้ามเลือก</b><small>เปิด = แสดงเลขงดที่หน้าเล่นและบังคับห้ามเลือก</small></div>
+      <input type="checkbox" checked={blockedEnabled} disabled={loading||!session||saving} onChange={e=>setBlockedEnabled(e.target.checked)}/>
+     </label>
+     <label>
+      <small style={{display:"block"}}>ใส่หลายเลขได้ คั่นด้วยเว้นวรรคหรือเครื่องหมายจุลภาค</small>
+      <textarea value={blocked} rows={3} onChange={e=>setBlocked(e.target.value)} placeholder="เช่น 123, 45, 7"/>
+     </label>
+    </div>
 
     <label>
      <b>หักยอดเมื่อเลือก “สด” (%)</b>
