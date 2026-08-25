@@ -70,6 +70,7 @@ export async function POST(request: Request) {
         ok: true,
         displayName: data.display_name || profile.displayName,
         role: data.role || "admin",
+        sessionToken: String(data.session_token),
       },
       { headers: { "cache-control": "no-store" } },
     )

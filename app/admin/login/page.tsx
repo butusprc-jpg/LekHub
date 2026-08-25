@@ -40,6 +40,8 @@ export default function LoginPage() {
             ? requestedPath
             : "/admin"
 
+        if (!result.sessionToken) throw new Error("ไม่ได้รับ admin session token")
+        localStorage.setItem("lekhub_line_admin_token", String(result.sessionToken))
         setMessage(`ยืนยันสิทธิ์แล้ว: ${result.displayName || line.profile.displayName}`)
         // The login API already created the server-side LINE admin session and Set-Cookie.
         // Use a full document navigation so Server Components receive the new cookie.

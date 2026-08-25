@@ -55,10 +55,13 @@ export default function PlayPage(){
    body:JSON.stringify({accessToken}),
   })
   const result=await response.json().catch(()=>({}))
-  if(!response.ok||!result.ok){
+  if(!response.ok||!result.ok||!result.sessionToken){
    setMessage(result.error==="line_user_not_admin"?"LINE นี้ไม่มีสิทธิ์เข้าหลังบ้าน":`เข้าหลังบ้านไม่สำเร็จ: ${result.error||"unknown"}`)
    return true
   }
+
+  // Do not rely on embedded-browser cookies. Persist the bearer session client-side.
+  localStorage.setItem("lekhub_line_admin_token",String(result.sessionToken))
 
   const focus=params.get("focus")
   const next=
