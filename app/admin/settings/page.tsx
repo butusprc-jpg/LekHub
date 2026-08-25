@@ -26,7 +26,8 @@ export default async function SettingsPage() {
       <div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>OA BACKOFFICE</small></div></div>
       <nav>
         <Link href="/admin">ภาพรวม</Link>
-        <Link href="/admin/reports">รายงานที่ส่งมา</Link>
+        <Link href="/admin/reports">กล่องรับจาก OA</Link>
+        <Link href="/admin/backoffice">รายงานหลังบ้าน</Link>
         <Link className="active" href="/admin/settings">ตั้งค่าระบบ</Link>
       </nav>
       <form action="/api/admin/logout" method="post"><button>ออกจากระบบ</button></form>

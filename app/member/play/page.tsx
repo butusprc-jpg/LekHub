@@ -115,7 +115,7 @@ export default function PlayPage(){
      ]},
      footer:{type:"box",layout:"vertical",contents:[{
       type:"button",style:"primary",color:"#C40000",
-      action:{type:"uri",label:"ส่งเข้าหลังบ้าน",uri:"https://lek-hub.vercel.app/admin/reports"}
+      action:{type:"uri",label:"เปิดตรวจสอบรายการ",uri:`https://lek-hub.vercel.app/admin/reports?focus=${data.id}`}
      }]}
     }
     }])
