@@ -1,63 +1,64 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createClient } from "../../../lib/supabase/client"
+import { initLIFF } from "../../../lib/liff"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
+  const [message, setMessage] = useState("กำลังตรวจสอบสิทธิ์ LINE OA...")
   const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState("")
 
   useEffect(() => {
-    createClient().auth.getUser().then(({data}) => {
-      if (!data.user) return
-      const requestedPath = new URLSearchParams(window.location.search).get("next")
-      window.location.replace(requestedPath?.startsWith("/admin") && !requestedPath.startsWith("//") ? requestedPath : "/admin")
-    })
+    let cancelled = false
+
+    async function login() {
+      try {
+        const line = await initLIFF()
+        if (!line || cancelled) return
+
+        const accessToken = line.liff.getAccessToken()
+        if (!accessToken) throw new Error("ไม่พบ LINE access token")
+
+        const response = await fetch("/api/admin/line-login", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ accessToken }),
+        })
+
+        const result = await response.json().catch(() => ({}))
+        if (!response.ok || !result.ok) {
+          if (result.error === "line_user_not_admin") {
+            throw new Error("LINE นี้ไม่มีสิทธิ์เข้าหลังบ้าน")
+          }
+          throw new Error(result.error || "ตรวจสอบสิทธิ์ไม่สำเร็จ")
+        }
+
+        const requestedPath = new URLSearchParams(window.location.search).get("next")
+        const nextPath =
+          requestedPath?.startsWith("/admin") && !requestedPath.startsWith("//")
+            ? requestedPath
+            : "/admin"
+
+        setMessage(`ยืนยันสิทธิ์แล้ว: ${result.displayName || line.profile.displayName}`)
+        window.location.replace(nextPath)
+      } catch (caught) {
+        if (cancelled) return
+        setError(caught instanceof Error ? caught.message : "เข้าสู่หลังบ้านไม่สำเร็จ")
+        setMessage("")
+      }
+    }
+
+    login()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
-  async function sendMagicLink() {
-    setError("")
-    setMessage("")
-    if (!email) {
-      setError("กรุณากรอกอีเมลก่อน")
-      return
-    }
-
-    setLoading(true)
-    try {
-      const requestedPath = new URLSearchParams(window.location.search).get("next")
-      const nextPath = requestedPath?.startsWith("/admin") && !requestedPath.startsWith("//")
-        ? requestedPath
-        : "/admin"
-      const redirectTo = new URL("/auth/callback", window.location.origin)
-      redirectTo.searchParams.set("next", nextPath)
-
-      const supabase = createClient()
-      const { error: magicLinkError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: redirectTo.toString(),
-          shouldCreateUser: false,
-        },
-      })
-      if (magicLinkError) throw magicLinkError
-      setMessage("ส่งลิงก์เข้าสู่ระบบแล้ว กรุณาตรวจอีเมล")
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "ส่งลิงก์ไม่สำเร็จ")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return <main>
-    <h1>เข้าสู่ระบบหลังบ้าน</h1>
-    <form onSubmit={event=>{event.preventDefault();sendMagicLink()}}>
-      <label>อีเมล<input autoComplete="email" inputMode="email" type="email" required value={email} onChange={event=>setEmail(event.target.value)}/></label>
-      {error && <p role="alert">{error}</p>}
+  return (
+    <main style={{maxWidth:520, margin:"60px auto", padding:24, textAlign:"center"}}>
+      <h1>LekHub หลังบ้าน</h1>
       {message && <p role="status">{message}</p>}
-      <button disabled={loading} type="submit">{loading ? "กำลังส่ง..." : "ส่งลิงก์เข้าอีเมล"}</button>
-    </form>
-  </main>
+      {error && <p role="alert" style={{color:"#b00020", fontWeight:700}}>{error}</p>}
+      <p>เปิดหน้านี้ผ่าน LINE OA ระบบจะตรวจสิทธิ์แอดมินให้อัตโนมัติ</p>
+    </main>
+  )
 }
