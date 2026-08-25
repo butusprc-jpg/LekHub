@@ -1,0 +1,5 @@
+LekHub v23 route fixes
+- Member Play is now a real link to /member/play.
+- Admin Settings now points to /admin/settings instead of looping to /admin.
+- Added protected settings screen for accepting status and close time.
+- Admin login remains required by design.

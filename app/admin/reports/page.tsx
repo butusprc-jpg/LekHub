@@ -20,7 +20,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
 
   return <main className="admin-shell">
     <aside className="admin-sidebar"><div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>OA BACKOFFICE</small></div></div>
-      <nav><Link href="/admin">ภาพรวม</Link><Link className="active" href="/admin/reports">รายงานที่ส่งมา</Link><Link href="/admin">ตั้งค่าระบบ</Link></nav>
+      <nav><Link href="/admin">ภาพรวม</Link><Link className="active" href="/admin/reports">รายงานที่ส่งมา</Link><Link href="/admin/settings">ตั้งค่าระบบ</Link></nav>
       <form action="/auth/signout" method="post"><button>ออกจากระบบ</button></form>
     </aside>
     <section className="admin-content">
