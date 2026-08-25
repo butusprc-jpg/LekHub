@@ -4,7 +4,7 @@ import { initLIFF, type LiffClient, type LineProfile } from "../../../lib/liff"
 import { createClient } from "../../../lib/supabase/client"
 
 type Item={value:string;category:string;category_label:string;heart:number}
-const types=[["3topmix","3 ตัวบน + โต๊ด"],["3top","3 ตัวบน"],["2top","2 ตัวบน"],["single","วิ่งบน"],["bottom","2 ตัวล่าง"]]
+const types=[["3topmix","3 ตัวบน + สลับ"],["3top","3 ตัวบน"],["2top","2 ตัวบน"],["single","วิ่งบน"],["bottom","2 ตัวล่าง"]]
 
 export default function PlayPage(){
  const [profile,setProfile]=useState<LineProfile|null>(null),[liff,setLiff]=useState<LiffClient|null>(null)
@@ -24,15 +24,15 @@ export default function PlayPage(){
  function add(){const number=value.replace(/\D/g,"");const parts=amount.split(/[x×]/i).map(x=>Number(x.trim())).filter(x=>x>0)
   if(!/^\d{1,6}$/.test(number)||!parts.length){setMessage("กรุณากรอกเลขและยอดให้ครบ");return}
   const added:Item[]=category==="3topmix"&&parts.length>1
-   ?[{value:number,category:"3top",category_label:"3 ตัวบน",heart:parts[0]},{value:number,category:"3topmix",category_label:"3 ตัวโต๊ด",heart:parts[1]}]
+   ?[{value:number,category:"3top",category_label:"3 ตัวบน",heart:parts[0]},{value:number,category:"3topmix",category_label:"3 ตัวสลับ",heart:parts[1]}]
    :[{value:number,category,category_label:types.find(x=>x[0]===category)?.[1]||category,heart:parts[0]}]
   setItems(v=>[...v,...added]);setValue("");setAmount("");setMessage("")
  }
- async function submit(){if(!profile||!items.length||sending)return;setSending(true);setMessage("")
+ async function submit(){const activeLiff=liff;if(!profile||!activeLiff||!items.length||sending)return;setSending(true);setMessage("")
   const code=`SL-${Date.now().toString(36).toUpperCase()}`
   const {data,error}=await createClient().rpc("submit_lekhub_submission",{p_reference_code:code,p_line_user_id:profile.userId,p_member_name:profile.displayName,p_member_avatar:profile.pictureUrl||null,p_items:items})
   if(error||!data?.success){setMessage("ส่งไม่สำเร็จ กรุณาลองใหม่");setSending(false);return}
-  try{await liff.sendMessages([{type:"flex",altText:`รายการใหม่ ${code} รวม ${total}`,contents:{type:"bubble",header:{type:"box",layout:"horizontal",backgroundColor:"#B90000",paddingAll:"16px",contents:[{type:"text",text:"รายการเลือกเลขใหม่",color:"#FFFFFF",weight:"bold",size:"lg"},{type:"text",text:"รอตรวจสอบ",color:"#111111",align:"end",flex:1}]},body:{type:"box",layout:"vertical",contents:[{type:"text",text:`สมาชิก  ${profile.displayName}`,weight:"bold"},{type:"text",text:`รหัส  ${data.reference_code||code}`,margin:"md"},{type:"separator",margin:"lg"},...items.map(x=>({type:"box",layout:"horizontal",paddingAll:"10px",contents:[{type:"text",text:x.value,weight:"bold",size:"xl",flex:2},{type:"text",text:`${x.category_label} ${x.heart}`,size:"sm",wrap:true,flex:5}]})),{type:"separator",margin:"md"},{type:"text",text:`${items.length} รายการ     รวม ${total.toLocaleString()}`,weight:"bold",size:"lg",margin:"lg",align:"center"}]},footer:{type:"box",layout:"vertical",contents:[{type:"button",style:"primary",color:"#C40000",action:{type:"uri",label:"ส่งเข้าหลังบ้าน",uri:"https://lek-hub.vercel.app/admin/reports"}}]}}}])}catch{}
+  try{await activeLiff.sendMessages([{type:"flex",altText:`รายการใหม่ ${code} รวม ${total}`,contents:{type:"bubble",header:{type:"box",layout:"horizontal",backgroundColor:"#B90000",paddingAll:"16px",contents:[{type:"text",text:"รายการเลือกเลขใหม่",color:"#FFFFFF",weight:"bold",size:"lg"},{type:"text",text:"รอตรวจสอบ",color:"#111111",align:"end",flex:1}]},body:{type:"box",layout:"vertical",contents:[{type:"text",text:`สมาชิก  ${profile.displayName}`,weight:"bold"},{type:"text",text:`รหัส  ${data.reference_code||code}`,margin:"md"},{type:"separator",margin:"lg"},...items.map(x=>({type:"box",layout:"horizontal",paddingAll:"10px",contents:[{type:"text",text:x.value,weight:"bold",size:"xl",flex:2},{type:"text",text:`${x.category_label} ${x.heart}`,size:"sm",wrap:true,flex:5}]})),{type:"separator",margin:"md"},{type:"text",text:`${items.length} รายการ     รวม ${total.toLocaleString()}`,weight:"bold",size:"lg",margin:"lg",align:"center"}]},footer:{type:"box",layout:"vertical",contents:[{type:"button",style:"primary",color:"#C40000",action:{type:"uri",label:"ส่งเข้าหลังบ้าน",uri:"https://lek-hub.vercel.app/admin/reports"}}]}}}])}catch{}
   setItems([]);setValue("");setAmount("");setMessage(`ส่งเรียบร้อย รหัส ${data.reference_code||code}`);setSending(false)
  }
  return <main className="play-mobile"><header className="play-title"><button onClick={()=>history.back()}>×</button><h1>เลือกเลข</h1><span/></header>
