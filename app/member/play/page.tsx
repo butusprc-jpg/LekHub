@@ -87,7 +87,14 @@ export default function PlayPage(){
   })
 
   if(error||!data?.success){
-   setMessage(error?.message||"บันทึกไม่สำเร็จ กรุณาลองใหม่")
+   const raw=String(error?.message||data?.reason||"")
+   const friendly=
+    raw.includes("outside_accepting_time") ? `ปิดรับรายการแล้ว เวลา ${closeTime} กรุณาเข้าเมนูตั้งค่าเพื่อเปลี่ยนเวลาปิดรับ` :
+    raw.includes("not_accepting") ? "ระบบปิดรับรายการอยู่ กรุณาเข้าเมนูตั้งค่าแล้วเปิดรับรายการ" :
+    raw.includes("rate_limited") ? "ส่งรายการถี่เกินไป กรุณารอสักครู่แล้วลองใหม่" :
+    raw.includes("blocked_value") ? "มีเลขที่ระบบตั้งค่าไม่รับ กรุณาตรวจรายการ" :
+    raw || "บันทึกไม่สำเร็จ กรุณาลองใหม่"
+   setMessage(friendly)
    setSending(false)
    return
   }
