@@ -19,8 +19,12 @@ export async function updateSubmission(formData: FormData) {
   }
 
   const { error } = await createAdminClient().rpc(
-    "admin_set_lekhub_submission_status",
-    { p_submission_id: id, p_status: status },
+    "lekhub_line_admin_set_submission_status",
+    {
+      p_token: access.token,
+      p_submission_id: id,
+      p_status: status,
+    },
   )
 
   if (error) throw new Error(error.message)

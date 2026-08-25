@@ -34,8 +34,8 @@ export default async function Reports({
     : null
 
   const { data, error } = await createAdminClient().rpc(
-    "admin_list_lekhub_submissions",
-    { p_status: activeStatus, p_limit: 200 },
+    "lekhub_line_admin_list_submissions",
+    { p_token: access.token, p_status: activeStatus, p_limit: 200 },
   )
   const submissions = (data || []) as Submission[]
 

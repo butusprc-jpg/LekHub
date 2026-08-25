@@ -16,8 +16,12 @@ export async function saveSettings(formData: FormData) {
   }
 
   const { error } = await createAdminClient().rpc(
-    "admin_update_lekhub_settings",
-    { p_accepting: accepting, p_close_time: closeTime },
+    "lekhub_line_admin_update_settings",
+    {
+      p_token: access.token,
+      p_accepting: accepting,
+      p_close_time: closeTime,
+    },
   )
 
   if (error) throw new Error(error.message)

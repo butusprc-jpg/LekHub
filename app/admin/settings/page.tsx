@@ -10,7 +10,11 @@ export default async function SettingsPage() {
   const access = await getLineAdminSession()
   if (!access) redirect("/admin/login?next=/admin/settings")
 
-  const { data, error } = await createAdminClient().rpc("admin_get_lekhub_settings")
+  const { data, error } = await createAdminClient().rpc(
+    "lekhub_line_admin_get_settings",
+    { p_token: access.token },
+  )
+
   const settings = data || {
     accepting: true,
     close_time: "15:30:00",

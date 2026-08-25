@@ -10,8 +10,8 @@ export default async function AdminPage() {
   if (!access) redirect("/admin/login")
 
   const { data, error } = await createAdminClient().rpc(
-    "admin_list_lekhub_submissions",
-    { p_status: null, p_limit: 200 },
+    "lekhub_line_admin_list_submissions",
+    { p_token: access.token, p_status: null, p_limit: 200 },
   )
 
   const rows = data || []

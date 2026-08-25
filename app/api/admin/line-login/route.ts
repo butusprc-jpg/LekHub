@@ -1,5 +1,6 @@
+import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
-import { ADMIN_COOKIE, createAdminSessionToken } from "../../../../lib/admin-session"
+import { ADMIN_COOKIE } from "../../../../lib/admin-session"
 
 export const runtime = "nodejs"
 
@@ -9,13 +10,18 @@ type LineProfile = {
   pictureUrl?: string
 }
 
-function allowedAdminIds() {
-  return new Set(
-    (process.env.LINE_ADMIN_USER_IDS || "")
-      .split(",")
-      .map(value => value.trim())
-      .filter(Boolean),
-  )
+function supabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+  const key = (
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )?.trim()
+
+  if (!url || !key) throw new Error("Missing Supabase environment variables")
+
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
 }
 
 export async function POST(request: Request) {
@@ -41,26 +47,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "line_profile_invalid" }, { status: 401 })
     }
 
-    const allowlist = allowedAdminIds()
-    if (!allowlist.size) {
-      return NextResponse.json({ ok: false, error: "LINE_ADMIN_USER_IDS_not_configured" }, { status: 500 })
-    }
-
-    if (!allowlist.has(profile.userId)) {
-      return NextResponse.json({ ok: false, error: "line_user_not_admin" }, { status: 403 })
-    }
-
-    const token = createAdminSessionToken({
-      userId: profile.userId,
-      displayName: profile.displayName,
+    const { data, error } = await supabaseClient().rpc("lekhub_line_admin_login", {
+      p_line_user_id: profile.userId,
+      p_display_name: profile.displayName,
+      p_picture_url: profile.pictureUrl || null,
     })
+
+    if (error) {
+      console.error("LINE admin RPC failed", error)
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+    }
+
+    if (!data?.ok || !data?.session_token) {
+      return NextResponse.json(
+        { ok: false, error: data?.error || "line_user_not_admin" },
+        { status: data?.error === "line_user_not_admin" ? 403 : 401 },
+      )
+    }
 
     const response = NextResponse.json({
       ok: true,
-      displayName: profile.displayName,
+      displayName: data.display_name || profile.displayName,
+      role: data.role || "admin",
     })
 
-    response.cookies.set(ADMIN_COOKIE, token, {
+    response.cookies.set(ADMIN_COOKIE, String(data.session_token), {
       httpOnly: true,
       secure: true,
       sameSite: "lax",

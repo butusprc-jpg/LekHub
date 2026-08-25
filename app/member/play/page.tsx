@@ -51,7 +51,9 @@ export default function PlayPage(){
 
  async function submit(){
   const activeLiff=liff
-  if(!profile||!activeLiff||!items.length||sending)return
+  if(!items.length||sending)return
+  if(!open){setMessage("ปิดรับรายการแล้ว");return}
+  if(!profile||!activeLiff){setMessage("ยังเชื่อม LINE ไม่สำเร็จ กรุณาเปิดผ่าน LINE OA แล้วลองอีกครั้ง");return}
   setSending(true)
   setMessage("")
   const code=`SL-${Date.now().toString(36).toUpperCase()}`
@@ -173,7 +175,7 @@ export default function PlayPage(){
    </div>
    <button
     className="red-action"
-    disabled={!profile||!items.length||sending||!open}
+    disabled={!items.length||sending}
     onClick={()=>setReviewing(true)}
    >
     ทบทวนก่อนส่ง
