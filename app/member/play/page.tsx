@@ -12,6 +12,10 @@ export default function PlayPage(){
  const [items,setItems]=useState<Item[]>([]),[message,setMessage]=useState("กำลังโหลดชื่อ LINE...")
  const [sending,setSending]=useState(false),[open,setOpen]=useState(true)
  const [reviewing,setReviewing]=useState(false),[cash,setCash]=useState(false)
+ const [blockedValues,setBlockedValues]=useState<string[]>([])
+ const [cashPercent,setCashPercent]=useState(0)
+ const [categoryAmounts,setCategoryAmounts]=useState<Record<string,number>>({})
+ const [closeTime,setCloseTime]=useState("")
 
  useEffect(()=>{
   localStorage.removeItem("lekhub_member_name")
@@ -30,6 +34,15 @@ export default function PlayPage(){
   createClient().rpc("get_lekhub_public_status").then(({data})=>{
    if(data&&typeof data==="object"){
     if("is_open" in data)setOpen(Boolean(data.is_open))
+    if(Array.isArray(data.blocked_values))setBlockedValues(data.blocked_values.map(String))
+    if(data.cash_percent!=null)setCashPercent(Number(data.cash_percent)||0)
+    if(data.category_amounts&&typeof data.category_amounts==="object"){
+     const next=Object.fromEntries(Object.entries(data.category_amounts).map(([k,v])=>[k,Number(v)||0]))
+     setCategoryAmounts(next)
+     const first=Number(next["3topmix"]||0)
+     if(first>0)setAmount(String(first))
+    }
+    if(data.close_time)setCloseTime(String(data.close_time).slice(0,5))
    }
   },()=>{})
  },[])
@@ -74,7 +87,11 @@ export default function PlayPage(){
   return true
  }
 
- const total=useMemo(()=>items.reduce((s,x)=>s+x.heart,0),[items])
+ const rawTotal=useMemo(()=>items.reduce((s,x)=>s+x.heart,0),[items])
+ const total=useMemo(
+  ()=>cash?Math.round((rawTotal*(1-Math.max(0,Math.min(100,cashPercent))/100))*100)/100:rawTotal,
+  [rawTotal,cash,cashPercent]
+ )
 
  function add(){
   const number=value.replace(/\D/g,"")
@@ -92,6 +109,11 @@ export default function PlayPage(){
      ?"วิ่งบนใส่ได้แค่เลขเดียว"
      :`กรุณาใส่เลขให้ครบ ${requiredDigits} หลัก`
    )
+   return
+  }
+
+  if(blockedValues.includes(number)){
+   setMessage(`เลข ${number} งด`)
    return
   }
 
@@ -154,6 +176,7 @@ export default function PlayPage(){
    const raw=String(error?.message||data?.reason||"")
    const friendly=
     raw.includes("not_accepting") ? "ระบบปิดรับรายการอยู่ กรุณาเข้าเมนูตั้งค่าแล้วเปิดรับรายการ" :
+    raw.includes("outside_accepting_time") ? "เลยเวลาปิดรับรายการแล้ว" :
     raw.includes("rate_limited") ? "ส่งรายการถี่เกินไป กรุณารอสักครู่แล้วลองใหม่" :
     raw.includes("blocked_value") ? "มีเลขที่ระบบตั้งค่าไม่รับ กรุณาตรวจรายการ" :
     raw || "บันทึกไม่สำเร็จ กรุณาลองใหม่"
@@ -219,7 +242,12 @@ export default function PlayPage(){
   </section>
 
   <section className="pick-card">
-   <label>ประเภท<select value={category} onChange={e=>{setCategory(e.target.value);setValue("");setMessage("")}}>
+   <label>ประเภท<select value={category} onChange={e=>{
+    const next=e.target.value
+    setCategory(next);setValue("");setMessage("")
+    const configured=Number(categoryAmounts[next]||0)
+    setAmount(configured>0?String(configured):"")
+   }}>
     {types.map(([k,n])=><option key={k} value={k}>{n}</option>)}
    </select></label>
    <label>เลข<input
@@ -235,6 +263,8 @@ export default function PlayPage(){
    /></label>
    <label>ยอด<input inputMode="numeric" pattern="[0-9]*" value={amount} onChange={e=>{setAmount(e.target.value.replace(/\D/g,""));setMessage("")}}/></label>
    
+   {!!blockedValues.length&&<small style={{display:"block",marginBottom:"8px"}}>งด: {blockedValues.join(", ")}</small>}
+   {closeTime&&<small style={{display:"block",marginBottom:"8px"}}>ปิดรับเวลา {closeTime}</small>}
    <button type="button" className="red-action" onClick={add}>＋ เพิ่ม</button>
    {message&&<p className="play-message">{message}</p>}
   </section>
@@ -261,7 +291,7 @@ export default function PlayPage(){
   </section>}
 
   <section className="send-card">
-   <div><b>{items.length} รายการ</b><span>รวม <strong>{total.toLocaleString()}</strong></span></div>
+   <div><b>{items.length} รายการ</b><span>รวม <strong>{total.toLocaleString()}</strong>{cash&&cashPercent>0?<small style={{display:"block"}}>สด -{cashPercent}%</small>:null}</span></div>
    <div className="review-action-row">
     <label className="cash-check">
      <input type="checkbox" checked={cash} onChange={e=>setCash(e.target.checked)}/>
@@ -282,7 +312,7 @@ export default function PlayPage(){
       <b>{x.value}</b><span>{x.category_label}</span><strong>{x.heart.toLocaleString()}</strong>
      </div>)}
     </div>
-    <div className="review-sum"><span>{items.length} รายการ</span><b>รวม {total.toLocaleString()}</b></div>
+    <div className="review-sum"><span>{items.length} รายการ</span><b>รวม {total.toLocaleString()}{cash&&cashPercent>0?` (สด -${cashPercent}%)`:""}</b></div>
     {message&&<p className="play-message">{message}</p>}
     <button type="button" className="red-action" disabled={sending} onClick={submit}>
      {sending?"กำลังส่ง...":"บันทึกส่ง"}

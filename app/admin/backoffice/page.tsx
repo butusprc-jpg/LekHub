@@ -10,6 +10,7 @@ type ReportItem={
  category_label:string
  heart:number
  cash?:boolean
+ imported_at?:string
 }
 
 type Report={
@@ -49,6 +50,14 @@ function thaiDate(value:string){
  return new Intl.DateTimeFormat("th-TH",{
   timeZone:"Asia/Bangkok",
   day:"numeric",month:"long",year:"numeric",
+ }).format(new Date(value))
+}
+
+function thaiDateTime(value:string){
+ return new Intl.DateTimeFormat("th-TH",{
+  timeZone:"Asia/Bangkok",
+  day:"2-digit",month:"2-digit",year:"numeric",
+  hour:"2-digit",minute:"2-digit",
  }).format(new Date(value))
 }
 
@@ -94,7 +103,7 @@ export default function BackofficePage(){
     date.members.set(memberKey,member)
    }
 
-   member.items.push(...(report.items||[]))
+   member.items.push(...(report.items||[]).map(item=>({...item,imported_at:report.imported_at})))
    member.total+=Number(report.total||0)
    date.total+=Number(report.total||0)
   }
@@ -140,16 +149,19 @@ export default function BackofficePage(){
     <div style={{overflowX:"auto"}}>
      <table style={{width:"100%",borderCollapse:"collapse",minWidth:"720px",tableLayout:"fixed"}}>
       <colgroup>
-       <col style={{width:"22%"}}/>
-       <col style={{width:"14%"}}/>
-       <col style={{width:"22%"}}/>
-       <col style={{width:"14%"}}/>
+       <col style={{width:"18%"}}/>
+       <col style={{width:"16%"}}/>
+       <col style={{width:"12%"}}/>
+       <col style={{width:"18%"}}/>
+       <col style={{width:"16%"}}/>
+       <col style={{width:"12%"}}/>
        <col style={{width:"10%"}}/>
        <col style={{width:"18%"}}/>
       </colgroup>
       <thead>
        <tr>
         <th style={{textAlign:"left",padding:"10px"}}>ชื่อ</th>
+        <th style={{textAlign:"left",padding:"10px"}}>วันเวลา</th>
         <th style={{textAlign:"left",padding:"10px"}}>เลข</th>
         <th style={{textAlign:"left",padding:"10px"}}>ประเภท</th>
         <th style={{textAlign:"right",padding:"10px"}}>ยอด</th>
@@ -163,6 +175,7 @@ export default function BackofficePage(){
          rowSpan={member.items.length}
          style={{verticalAlign:"top",padding:"12px",fontWeight:700}}
         >{member.name}</td>}
+        <td style={{padding:"12px",fontWeight:700}}>{item.imported_at?thaiDateTime(item.imported_at):"-"}</td>
         <td style={{padding:"12px",fontWeight:700}}>{item.value}</td>
         <td style={{padding:"12px",fontWeight:700}}>{item.category_label}</td>
         <td style={{padding:"12px",textAlign:"right",fontWeight:700}}>{Number(item.heart).toLocaleString()}</td>
