@@ -25,5 +25,192 @@ create table if not exists public.lekhub_backoffice_report_items (
 alter table public.lekhub_backoffice_reports enable row level security;
 alter table public.lekhub_backoffice_report_items enable row level security;
 
-create index if not exists lekhub_backoffice_reports_imported_at_idx on public.lekhub_backoffice_reports(imported_at desc);
-create index if not exists lekhub_backoffice_report_items_report_id_idx on public.lekhub_backoffice_report_items(report_id, sort_order);
+create index if not exists lekhub_backoffice_reports_imported_at_idx
+  on public.lekhub_backoffice_reports(imported_at desc);
+create index if not exists lekhub_backoffice_report_items_report_id_idx
+  on public.lekhub_backoffice_report_items(report_id, sort_order);
+
+create or replace function public.lekhub_line_admin_list_oa_inbox(
+  p_token text,
+  p_status text default null,
+  p_limit integer default 100
+)
+returns table(
+  id uuid,
+  reference_code text,
+  line_user_id text,
+  member_name text,
+  member_avatar text,
+  status text,
+  item_count integer,
+  total numeric,
+  created_at timestamptz,
+  reviewed_at timestamptz,
+  imported_at timestamptz,
+  items jsonb
+)
+language plpgsql
+security definer
+set search_path='public'
+as $$
+declare v_session jsonb;
+begin
+  v_session := public.lekhub_check_line_admin_session(p_token);
+  if coalesce((v_session->>'ok')::boolean,false) is not true then
+    raise exception 'admin_required';
+  end if;
+
+  return query
+  select
+    s.id,s.reference_code,s.line_user_id,s.member_name,s.member_avatar,
+    s.status,s.item_count,s.total,s.created_at,s.reviewed_at,
+    r.imported_at,
+    coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id',i.id,
+          'value',i.item_value,
+          'category',i.category,
+          'category_label',i.category_label,
+          'heart',i.heart,
+          'sort_order',i.sort_order
+        )
+        order by i.sort_order
+      )
+      from public.lekhub_submission_items i
+      where i.submission_id=s.id
+    ),'[]'::jsonb)
+  from public.lekhub_submissions s
+  left join public.lekhub_backoffice_reports r on r.source_submission_id=s.id
+  where p_status is null or s.status=p_status
+  order by s.created_at desc
+  limit greatest(1,least(coalesce(p_limit,100),500));
+end;
+$$;
+
+create or replace function public.lekhub_line_admin_import_submission(
+  p_token text,
+  p_submission_id uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path='public'
+as $$
+declare
+  v_session jsonb;
+  v_admin_line_user_id text;
+  v_submission public.lekhub_submissions%rowtype;
+  v_report_id uuid;
+begin
+  v_session := public.lekhub_check_line_admin_session(p_token);
+  if coalesce((v_session->>'ok')::boolean,false) is not true then
+    raise exception 'admin_required';
+  end if;
+  v_admin_line_user_id := v_session->>'user_id';
+
+  select * into v_submission
+  from public.lekhub_submissions
+  where id=p_submission_id;
+
+  if v_submission.id is null then
+    raise exception 'submission_not_found';
+  end if;
+
+  if v_submission.status <> 'reviewed' then
+    return jsonb_build_object('success',false,'reason','review_required');
+  end if;
+
+  select id into v_report_id
+  from public.lekhub_backoffice_reports
+  where source_submission_id=p_submission_id;
+
+  if v_report_id is not null then
+    return jsonb_build_object(
+      'success',true,
+      'already_imported',true,
+      'report_id',v_report_id
+    );
+  end if;
+
+  insert into public.lekhub_backoffice_reports(
+    source_submission_id,reference_code,line_user_id,member_name,
+    member_avatar,item_count,total,imported_by_line_user_id
+  )
+  values(
+    v_submission.id,v_submission.reference_code,v_submission.line_user_id,
+    v_submission.member_name,v_submission.member_avatar,
+    v_submission.item_count,v_submission.total,v_admin_line_user_id
+  )
+  returning id into v_report_id;
+
+  insert into public.lekhub_backoffice_report_items(
+    report_id,item_value,category,category_label,heart,sort_order
+  )
+  select
+    v_report_id,item_value,category,category_label,heart,sort_order
+  from public.lekhub_submission_items
+  where submission_id=p_submission_id
+  order by sort_order;
+
+  return jsonb_build_object(
+    'success',true,
+    'already_imported',false,
+    'report_id',v_report_id
+  );
+end;
+$$;
+
+create or replace function public.lekhub_line_admin_list_backoffice_reports(
+  p_token text,
+  p_limit integer default 200
+)
+returns table(
+  id uuid,
+  source_submission_id uuid,
+  reference_code text,
+  line_user_id text,
+  member_name text,
+  member_avatar text,
+  item_count integer,
+  total numeric,
+  imported_by_line_user_id text,
+  imported_at timestamptz,
+  items jsonb
+)
+language plpgsql
+security definer
+set search_path='public'
+as $$
+declare v_session jsonb;
+begin
+  v_session := public.lekhub_check_line_admin_session(p_token);
+  if coalesce((v_session->>'ok')::boolean,false) is not true then
+    raise exception 'admin_required';
+  end if;
+
+  return query
+  select
+    r.id,r.source_submission_id,r.reference_code,r.line_user_id,
+    r.member_name,r.member_avatar,r.item_count,r.total,
+    r.imported_by_line_user_id,r.imported_at,
+    coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id',i.id,
+          'value',i.item_value,
+          'category',i.category,
+          'category_label',i.category_label,
+          'heart',i.heart,
+          'sort_order',i.sort_order
+        )
+        order by i.sort_order
+      )
+      from public.lekhub_backoffice_report_items i
+      where i.report_id=r.id
+    ),'[]'::jsonb)
+  from public.lekhub_backoffice_reports r
+  order by r.imported_at desc
+  limit greatest(1,least(coalesce(p_limit,200),500));
+end;
+$$;

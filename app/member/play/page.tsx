@@ -70,6 +70,7 @@ export default function PlayPage(){
 
  async function submit(){
   if(!items.length||sending)return
+  if(!open){setMessage("ปิดรับรายการแล้ว กรุณาติดต่อแอดมินหากต้องการเปิดทดสอบ");return}
   setSending(true)
   setMessage("กำลังบันทึก...")
   const activeLiff=liff
