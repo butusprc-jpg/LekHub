@@ -17,6 +17,23 @@ const TYPE_LABELS=[
  ["bottom","2 ล่าง"],
 ] as const
 
+
+function displayRoundInput(value?:string|null){
+ if(!value)return ""
+ const [y,m,d]=value.slice(0,10).split("-").map(Number)
+ if(!y||!m||!d)return ""
+ return `${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${String((y+543)%100).padStart(2,"0")}`
+}
+function parseRoundInput(value:string){
+ const m=value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/)
+ if(!m)return null
+ const d=Number(m[1]),mon=Number(m[2]); let y=Number(m[3])
+ if(m[3].length===2)y=2500+y-543
+ else if(y>=2400)y-=543
+ const dt=new Date(Date.UTC(y,mon-1,d))
+ if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==mon-1||dt.getUTCDate()!==d)return null
+ return `${String(y).padStart(4,"0")}-${String(mon).padStart(2,"0")}-${String(d).padStart(2,"0")}`
+}
 export default function SettingsPage(){
  const [session,setSession]=useState<ClientAdminSession|null>(null)
  const [accepting,setAccepting]=useState(true)
@@ -25,6 +42,7 @@ export default function SettingsPage(){
  const [blocked,setBlocked]=useState("")
  const [blockedEnabled,setBlockedEnabled]=useState(true)
  const [cashPercent,setCashPercent]=useState("0")
+ const [roundDateInput,setRoundDateInput]=useState("")
  const [loading,setLoading]=useState(true)
  const [saving,setSaving]=useState(false)
  const [message,setMessage]=useState("กำลังตรวจสอบสิทธิ์ LINE...")
@@ -45,6 +63,7 @@ export default function SettingsPage(){
    setBlocked(Array.isArray(data?.blocked_values)?data.blocked_values.join(", "):"")
    setBlockedEnabled(Boolean(data?.blocked_enabled))
    setCashPercent(String(Number(data?.cash_percent||0)))
+   setRoundDateInput(displayRoundInput(data?.round_date_override||""))
    setMessage(`เข้าระบบแล้ว: ${current.displayName}`)
   }catch(caught){
    setError(caught instanceof Error?caught.message:"เข้าตั้งค่าไม่สำเร็จ")
@@ -62,6 +81,8 @@ export default function SettingsPage(){
    return
   }
 
+  const parsedRound=roundDateInput.trim()?parseRoundInput(roundDateInput):null
+  if(roundDateInput.trim()&&!parsedRound){setError("รอบวันที่ต้องเป็นรูปแบบ วัน/เดือน/ปี เช่น 02/08/69");return}
   setSaving(true);setError("");setMessage("กำลังบันทึก...")
   try{
    const categoryAmounts=Object.fromEntries(
@@ -74,6 +95,7 @@ export default function SettingsPage(){
     p_category_amounts:categoryAmounts,
     p_cash_percent:pct,
     p_blocked_enabled:blockedEnabled,
+    p_round_date:parsedRound,
    })
    if(error)throw new Error(error.message)
    if(!data?.success)throw new Error("บันทึกการตั้งค่าไม่สำเร็จ")
@@ -152,6 +174,12 @@ export default function SettingsPage(){
      <b>หักยอดเมื่อเลือก “สด” (%)</b>
      <input inputMode="decimal" value={cashPercent} onChange={e=>setCashPercent(e.target.value.replace(/[^0-9.]/g,""))}/>
      <small style={{display:"block"}}>ตัวอย่าง 30% : ยอด 1,000 เหลือ 700</small>
+    </label>
+
+    <label>
+     <b>รอบวันที่</b>
+     <input inputMode="numeric" value={roundDateInput} onChange={e=>setRoundDateInput(e.target.value.replace(/[^0-9/]/g,"").slice(0,10))} placeholder="02/08/69"/>
+     <small style={{display:"block"}}>เว้นว่าง = ระบบเลือกรอบวันที่ 1 หรือ 16 อัตโนมัติ</small>
     </label>
 
     <button type="button" onClick={save} disabled={loading||!session||saving}>

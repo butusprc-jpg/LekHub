@@ -6,6 +6,14 @@ import { createClient } from "../../../lib/supabase/client"
 type Item={value:string;category:string;category_label:string;heart:number}
 const types=[["3topmix","3 บนสลับ"],["3top","3 บน"],["2top","2 บน"],["single","วิ่งบน"],["bottom","2 ล่าง"]]
 
+
+function roundLabel(value?:string|null){
+ if(!value)return ""
+ const [y,m,d]=value.slice(0,10).split("-").map(Number)
+ if(!y||!m||!d)return ""
+ return `${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${String((y+543)%100).padStart(2,"0")}`
+}
+
 export default function PlayPage(){
  const [profile,setProfile]=useState<LineProfile|null>(null),[liff,setLiff]=useState<LiffClient|null>(null)
  const [value,setValue]=useState(""),[category,setCategory]=useState("3topmix"),[amount,setAmount]=useState("")
@@ -16,6 +24,7 @@ export default function PlayPage(){
  const [cashPercent,setCashPercent]=useState(0)
  const [categoryAmounts,setCategoryAmounts]=useState<Record<string,number>>({})
  const [closeTime,setCloseTime]=useState("")
+ const [roundDate,setRoundDate]=useState("")
  const [attachment,setAttachment]=useState<File|null>(null)
  const [attachmentPreview,setAttachmentPreview]=useState("")
 
@@ -45,6 +54,7 @@ export default function PlayPage(){
      if(first>0)setAmount(String(first))
     }
     if(data.close_time)setCloseTime(String(data.close_time).slice(0,5))
+    if(data.round_date)setRoundDate(String(data.round_date).slice(0,10))
    }
   },()=>{})
  },[])
@@ -254,14 +264,23 @@ export default function PlayPage(){
  }
 
  return <main className="play-mobile">
-  <header className="play-title">
+  <header className="play-title" style={{alignItems:"flex-start"}}>
    <button type="button" aria-label="ปิดหน้าจอ" onClick={close}>×</button>
-   <h1>เลือกเลข</h1><span/>
+   <div style={{flex:1}}>
+    <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:"12px"}}>
+     <h1 style={{margin:0}}>เลือกเลข</h1>
+     <strong style={{fontSize:"14px",whiteSpace:"nowrap"}}>{roundDate?`รอบวันที่ ${roundLabel(roundDate)}`:""}</strong>
+    </div>
+    {!!blockedValues.length&&<div style={{marginTop:"4px",textAlign:"left"}}>
+     <strong style={{fontSize:"1.5rem",lineHeight:1.2}}>เลขงด {blockedValues.join(" ")}</strong>
+    </div>}
+   </div>
+   <span/>
   </header>
 
   <section className="line-person">
    {profile?.pictureUrl?<img src={profile.pictureUrl} alt="รูปโปรไฟล์ LINE"/>:<div className="line-avatar">LINE</div>}
-   <b>{profile?.displayName||"กำลังโหลดชื่อ LINE..."}{blockedValues.length?<small style={{marginLeft:"8px",fontWeight:500}}>{blockedValues.join(" ")}</small>:null}</b>
+   <b>{profile?.displayName||"กำลังโหลดชื่อ LINE..."}</b>
    <strong>{open?"เปิดรับรายการ":"ปิดรับแล้ว"}</strong>
   </section>
 
@@ -281,7 +300,12 @@ export default function PlayPage(){
     value={value}
     onChange={e=>{
      const limit=category==="single"?1:(category==="3topmix"||category==="3top")?3:2
-     setValue(e.target.value.replace(/\D/g,"").slice(0,limit))
+     const next=e.target.value.replace(/\D/g,"").slice(0,limit)
+     if(next.length===limit&&blockedValues.includes(next)){
+      setMessage(`เลข ${next} งด`)
+      return
+     }
+     setValue(next)
      setMessage("")
     }}
    /></label>

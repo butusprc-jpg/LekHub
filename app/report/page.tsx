@@ -14,6 +14,7 @@ type Row={
  total:number
  created_at:string
  attachment_url?:string|null
+ round_date?:string|null
  items:ReportItem[]
 }
 
@@ -23,6 +24,14 @@ function dateTime(value:string){
   day:"2-digit",month:"2-digit",year:"numeric",
   hour:"2-digit",minute:"2-digit"
  }).format(new Date(value))
+}
+
+
+function roundLabel(value?:string|null){
+ if(!value)return ""
+ const [y,m,d]=value.slice(0,10).split("-").map(Number)
+ if(!y||!m||!d)return ""
+ return `${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${String((y+543)%100).padStart(2,"0")}`
 }
 
 export default function Report(){
@@ -58,7 +67,7 @@ export default function Report(){
 
   {rows.map(row=><section className="member-card" key={row.id} style={{marginBottom:"14px"}}>
    <div style={{display:"flex",justifyContent:"space-between",gap:"12px"}}>
-    <div><b>{row.reference_code}</b><small style={{display:"block"}}>{dateTime(row.created_at)}</small></div>
+    <div><b>{row.reference_code}</b><small style={{display:"block"}}>{dateTime(row.created_at)}</small>{row.round_date&&<small style={{display:"block"}}>รอบวันที่ {roundLabel(row.round_date)}</small>}</div>
     <strong>{row.status}</strong>
    </div>
 
