@@ -285,7 +285,6 @@ export default function PlayPage(){
    <div style={{flex:1}}>
     <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:"12px"}}>
      <span/>
-     <strong style={{fontSize:"14px",whiteSpace:"nowrap"}}>{roundDate?`รอบวันที่ ${roundLabel(roundDate)}`:""}</strong>
     </div>
     {!!blockedValues.length&&<div style={{marginTop:"4px",textAlign:"left",maxWidth:"100%"}}>
      <strong style={{
@@ -304,7 +303,7 @@ export default function PlayPage(){
 
   <section className="line-person">
    {profile?.pictureUrl?<img src={profile.pictureUrl} alt="รูปโปรไฟล์ LINE"/>:<div className="line-avatar">LINE</div>}
-   <b>{profile?.displayName||"กำลังโหลดชื่อ LINE..."}</b>
+   <b style={{display:"flex",alignItems:"baseline",gap:"8px",flexWrap:"wrap"}}><span>{profile?.displayName||"กำลังโหลดชื่อ LINE..."}</span>{roundDate&&<small style={{fontWeight:700}}>รอบวันที่ {roundLabel(roundDate)}</small>}</b>
    <strong>{open?"เปิดรับรายการ":"ปิดรับแล้ว"}</strong>
   </section>
 

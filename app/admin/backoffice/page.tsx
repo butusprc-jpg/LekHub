@@ -136,12 +136,46 @@ export default function BackofficePage(){
      <option value="office">ส่งสำนักงาน</option>
      <option value="analysis">วิเคราะห์</option>
     </select>
-    <button type="button" onClick={exportReport}>ส่งออกรายงาน</button>
-    <button type="button" onClick={shareReport}>แชร์</button>
-    <button type="button" onClick={()=>window.print()}>ปริ้น</button>
+    <button type="button" onClick={()=>exportReport()}>ส่งออกรายงาน</button>
+    <button type="button" onClick={()=>void shareReport()}>แชร์</button>
+    <button type="button" onClick={()=>{window.print()}}>ปริ้น</button>
    </div>
 
-   {groups.map(group=><section key={group.dateKey} style={{marginBottom:"28px"}}>
+   {exportType==="office"&&<section style={{marginBottom:"28px",overflowX:"auto"}}>
+    <table style={{width:"100%",borderCollapse:"collapse",minWidth:"680px"}}>
+     <thead><tr>
+      <th style={{textAlign:"left",padding:"10px"}}>รอบเล่น</th>
+      <th style={{textAlign:"left",padding:"10px"}}>วันที่ส่ง</th>
+      <th style={{textAlign:"left",padding:"10px"}}>เลขที่เลือก</th>
+      <th style={{textAlign:"left",padding:"10px"}}>ประเภท</th>
+      <th style={{textAlign:"right",padding:"10px"}}>ยอด</th>
+     </tr></thead>
+     <tbody>
+      {groups.flatMap(g=>g.members.flatMap(m=>m.items)).map((item,index)=><tr key={`${item.id}-${index}`}>
+       <td style={{padding:"10px"}}>{item.round_date?`รอบวันที่ ${roundLabel(item.round_date)}`:"-"}</td>
+       <td style={{padding:"10px"}}>{dateTime(item.submitted_at||item.imported_at)}</td>
+       <td style={{padding:"10px",fontWeight:700}}>{item.value}</td>
+       <td style={{padding:"10px"}}>{item.category_label}</td>
+       <td style={{padding:"10px",textAlign:"right"}}>{Number(item.heart).toLocaleString()}</td>
+      </tr>)}
+      <tr><td colSpan={4} style={{padding:"12px",fontWeight:800,textAlign:"right"}}>รวมยอดทั้งหมด</td>
+       <td style={{padding:"12px",fontWeight:800,textAlign:"right"}}>{groups.reduce((sum,g)=>sum+g.members.reduce((s,m)=>s+m.items.reduce((x,i)=>x+Number(i.heart||0),0),0),0).toLocaleString()}</td></tr>
+     </tbody>
+    </table>
+   </section>}
+
+   {exportType==="analysis"&&<section style={{marginBottom:"28px",overflowX:"auto"}}>
+    <table style={{width:"100%",borderCollapse:"collapse",minWidth:"520px"}}>
+     <thead><tr><th style={{textAlign:"left",padding:"10px"}}>เลข</th><th style={{textAlign:"left",padding:"10px"}}>ประเภท</th><th style={{textAlign:"left",padding:"10px"}}>รางวัล</th></tr></thead>
+     <tbody>
+      {[...new Map(groups.flatMap(g=>g.members.flatMap(m=>m.items)).map(item=>[`${item.value}|${item.category_label}`,item])).values()].map((item,index)=><tr key={`${item.id}-${index}`}>
+       <td style={{padding:"10px",fontWeight:700}}>{item.value}</td><td style={{padding:"10px"}}>{item.category_label}</td><td style={{padding:"10px"}}></td>
+      </tr>)}
+     </tbody>
+    </table>
+   </section>}
+
+   {exportType==="self"&&groups.map(group=><section key={group.dateKey} style={{marginBottom:"28px"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:"16px",marginBottom:"10px"}}>
      <div><h2 style={{margin:0}}>{group.dateLabel}</h2><small>{[...new Set(group.members.flatMap(m=>m.rounds))].map(x=>`รอบวันที่ ${roundLabel(x)}`).join(" • ")}</small></div>
      <strong>รวม {group.total.toLocaleString()}</strong>

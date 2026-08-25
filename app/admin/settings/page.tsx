@@ -46,6 +46,7 @@ export default function SettingsPage(){
  const [previousRoundNumber,setPreviousRoundNumber]=useState("")
  const [activityPrizeNumber,setActivityPrizeNumber]=useState("")
  const [rewardSummary,setRewardSummary]=useState("")
+ const [multiplierMessage,setMultiplierMessage]=useState("")
  const [loading,setLoading]=useState(true)
  const [saving,setSaving]=useState(false)
  const [message,setMessage]=useState("กำลังตรวจสอบสิทธิ์ LINE...")
@@ -77,6 +78,23 @@ export default function SettingsPage(){
  }
 
  useEffect(()=>{load()},[])
+
+ async function saveMultipliers(){
+  if(!session||saving)return
+  setSaving(true);setError("");setMultiplierMessage("กำลังบันทึก...")
+  try{
+   const categoryAmounts=Object.fromEntries(
+    TYPE_LABELS.map(([key])=>[key,Math.max(0,Number(amounts[key]||0)||0)])
+   )
+   const {data,error}=await adminRpc(session,"lekhub_line_admin_update_category_amounts",{p_category_amounts:categoryAmounts})
+   if(error)throw new Error(error.message)
+   if(!data?.success)throw new Error("บันทึกค่ายอดประเภทไม่สำเร็จ")
+   setMultiplierMessage("บันทึกค่ายอดประเภทแล้ว")
+  }catch(caught){
+   setError(caught instanceof Error?caught.message:"บันทึกค่ายอดประเภทไม่สำเร็จ")
+   setMultiplierMessage("")
+  }finally{setSaving(false)}
+ }
 
  async function save(){
   if(!session||saving)return
@@ -186,6 +204,10 @@ export default function SettingsPage(){
        <input inputMode="numeric" pattern="[0-9]*" value={amounts[key]||""} onChange={e=>setAmounts(v=>({...v,[key]:e.target.value.replace(/\D/g,"")}))}/>
       </label>)}
      </div>
+     <button type="button" onClick={saveMultipliers} disabled={loading||!session||saving} style={{marginTop:"10px"}}>
+      {saving?"กำลังบันทึก...":"บันทึกค่ายอดประเภท"}
+     </button>
+     {multiplierMessage&&<small style={{display:"block",marginTop:"6px"}}>{multiplierMessage}</small>}
     </div>
 
     <div>

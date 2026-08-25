@@ -10,6 +10,7 @@ type MemberRow={
  total_played:number
  total_rewards:number
  last_activity:string
+ note?:string
 }
 
 function dateTime(value:string){
@@ -49,12 +50,12 @@ export default function MembersPage(){
    {error&&<div className="admin-error">{error}</div>}
    <div style={{overflowX:"auto"}}>
     <table style={{width:"100%",borderCollapse:"collapse",minWidth:"650px"}}>
-     <thead><tr><th style={{textAlign:"left",padding:"10px"}}>ชื่อ LINE</th><th style={{textAlign:"right",padding:"10px"}}>ยอดรวมทั้งหมดที่เล่น</th><th style={{textAlign:"right",padding:"10px"}}>ถูกรางวัลกิจกรรมทั้งหมด</th><th style={{textAlign:"left",padding:"10px"}}>ล่าสุด</th></tr></thead>
+     <thead><tr><th style={{textAlign:"left",padding:"10px"}}>ชื่อ LINE</th><th style={{textAlign:"right",padding:"10px"}}>ยอดรวมทั้งหมดที่เล่น</th><th style={{textAlign:"right",padding:"10px"}}>ถูกรางวัลกิจกรรมทั้งหมด</th><th style={{textAlign:"left",padding:"10px"}}>ข้อความสมาชิก</th><th style={{textAlign:"left",padding:"10px"}}>ล่าสุด</th></tr></thead>
      <tbody>{rows.map(row=><tr key={row.line_user_id}>
       <td style={{padding:"12px",fontWeight:700}}>{row.member_name}</td>
       <td style={{padding:"12px",textAlign:"right",fontWeight:700}}>{Number(row.total_played).toLocaleString()}</td>
       <td style={{padding:"12px",textAlign:"right",fontWeight:700}}>{Number(row.total_rewards).toLocaleString()}</td>
-      <td style={{padding:"12px"}}>{dateTime(row.last_activity)}</td>
+      <td style={{padding:"12px",whiteSpace:"pre-wrap",minWidth:"240px"}}>{row.note||"-"}</td><td style={{padding:"12px"}}>{dateTime(row.last_activity)}</td>
      </tr>)}</tbody>
     </table>
    </div>
