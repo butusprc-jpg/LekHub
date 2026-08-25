@@ -113,7 +113,7 @@ export default function PlayPage(){
   setValue("")
   setAmount("")
   setReviewing(false)
-  setMessage(`บันทึกส่งเรียบร้อย รหัส ${data.reference_code||code}`)
+  setMessage(`ส่งเรียบร้อย รหัส ${data.reference_code||code}`)
   setSending(false)
  }
 
@@ -176,7 +176,7 @@ export default function PlayPage(){
     disabled={!profile||!items.length||sending||!open}
     onClick={()=>setReviewing(true)}
    >
-    บันทึกส่ง
+    ทบทวนก่อนส่ง
    </button>
    {message&&<p className="play-message">{message}</p>}
   </section>
@@ -199,7 +199,7 @@ export default function PlayPage(){
       <b>รวม {total.toLocaleString()}</b>
      </div>
      <button className="red-action" disabled={sending} onClick={submit}>
-      {sending?"กำลังบันทึกส่ง...":"ยืนยันบันทึกส่ง"}
+      {sending?"กำลังส่ง...":"บันทึกส่ง"}
      </button>
      <button className="review-back" disabled={sending} onClick={()=>setReviewing(false)}>
       กลับไปแก้ไข
