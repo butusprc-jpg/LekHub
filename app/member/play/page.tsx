@@ -11,7 +11,7 @@ export default function PlayPage(){
  const [value,setValue]=useState(""),[category,setCategory]=useState("3topmix"),[amount,setAmount]=useState("")
  const [items,setItems]=useState<Item[]>([]),[message,setMessage]=useState("กำลังโหลดชื่อ LINE...")
  const [sending,setSending]=useState(false),[open,setOpen]=useState(true)
- const [reviewing,setReviewing]=useState(false)
+ const [reviewing,setReviewing]=useState(false),[cash,setCash]=useState(false)
 
  useEffect(()=>{
   localStorage.removeItem("lekhub_member_name")
@@ -78,9 +78,21 @@ export default function PlayPage(){
 
  function add(){
   const number=value.replace(/\D/g,"")
-  const parts=amount.split(/[x×]/i).map(x=>Number(x.trim())).filter(x=>x>0)
-  if(!/^\d{1,6}$/.test(number)||!parts.length){
-   setMessage("กรุณากรอกเลขและยอดให้ครบ")
+  const rawParts=amount.split(/[x×]/i).map(x=>x.trim()).filter(Boolean)
+  const parts=rawParts.map(x=>Number(x))
+
+  if(category==="single"&&!/^\d$/.test(number)){
+   setMessage("วิ่งบนใส่ได้แค่เลขเดียว")
+   return
+  }
+
+  if(category!=="single"&&!/^\d{1,6}$/.test(number)){
+   setMessage("กรุณากรอกเลขให้ครบ")
+   return
+  }
+
+  if(!rawParts.length||parts.some((n,i)=>!/^\d+$/.test(rawParts[i])||n<=0||n%10!==0)){
+   setMessage("ยอดต้องเป็นจำนวนเต็มและลงท้ายด้วย 0 เท่านั้น")
    return
   }
   const added:Item[]=category==="3topmix"&&parts.length>1
@@ -204,9 +216,9 @@ export default function PlayPage(){
    <label>ประเภท<select value={category} onChange={e=>setCategory(e.target.value)}>
     {types.map(([k,n])=><option key={k} value={k}>{n}</option>)}
    </select></label>
-   <label>เลข<input inputMode="numeric" maxLength={6} value={value} onChange={e=>setValue(e.target.value.replace(/\D/g,""))} placeholder="456"/></label>
-   <label>ยอด<input inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="100 × 100"/></label>
-   <small>ใส่ 100 × 100 เพื่อเลือกเป็นคู่</small>
+   <label>เลข<input inputMode="numeric" maxLength={category==="single"?1:6} value={value} onChange={e=>setValue(e.target.value.replace(/\D/g,"").slice(0,category==="single"?1:6))}/></label>
+   <label>ยอด<input inputMode="numeric" value={amount} onChange={e=>setAmount(e.target.value.replace(/[^0-9x×]/gi,""))}/></label>
+   
    <button type="button" className="red-action" onClick={add}>＋ เพิ่ม</button>
   </section>
 
@@ -219,7 +231,13 @@ export default function PlayPage(){
 
   <section className="send-card">
    <div><b>{items.length} รายการ</b><span>รวม <strong>{total.toLocaleString()}</strong></span></div>
-   <button type="button" className="red-action" onClick={openReview}>ทบทวนก่อนส่ง</button>
+   <div className="review-action-row">
+    <label className="cash-check">
+     <input type="checkbox" checked={cash} onChange={e=>setCash(e.target.checked)}/>
+     <span>สด</span>
+    </label>
+    <button type="button" className="red-action" onClick={openReview}>ทบทวนก่อนส่ง</button>
+   </div>
    {message&&<p className="play-message">{message}</p>}
   </section>
 
