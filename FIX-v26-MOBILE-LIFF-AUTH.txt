@@ -1,0 +1,10 @@
+LekHub v26 - Mobile / LIFF / Admin access fix
+
+- Root URL now opens the member play screen directly.
+- Play screen uses the full mobile viewport and safe-area padding.
+- Close button closes the LIFF window when available instead of navigating to the old menu.
+- Removed the old admin password form.
+- Existing authenticated admins enter the back office automatically.
+- Admins without an active session receive a passwordless email sign-in link.
+- Preserved Supabase admin_profiles authorization and all existing submission/report logic.
+- Production Next.js build completed successfully on 2026-08-25.

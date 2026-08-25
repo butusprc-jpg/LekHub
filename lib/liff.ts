@@ -1,5 +1,5 @@
 export type LineProfile = { userId: string; displayName: string; pictureUrl?: string }
-export type LiffClient = { init(o:{liffId:string}):Promise<void>; isLoggedIn():boolean; login(o?:{redirectUri?:string}):void; getProfile():Promise<LineProfile>; sendMessages(m:unknown[]):Promise<void> }
+export type LiffClient = { init(o:{liffId:string}):Promise<void>; isLoggedIn():boolean; login(o?:{redirectUri?:string}):void; getProfile():Promise<LineProfile>; sendMessages(m:unknown[]):Promise<void>; closeWindow?():void }
 declare global { interface Window { liff?: LiffClient } }
 
 export async function initLIFF() {
