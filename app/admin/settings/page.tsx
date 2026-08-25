@@ -43,6 +43,7 @@ export default function SettingsPage(){
  const [blockedEnabled,setBlockedEnabled]=useState(true)
  const [cashPercent,setCashPercent]=useState("0")
  const [roundDateInput,setRoundDateInput]=useState("")
+ const [previousRoundNumber,setPreviousRoundNumber]=useState("")
  const [loading,setLoading]=useState(true)
  const [saving,setSaving]=useState(false)
  const [message,setMessage]=useState("กำลังตรวจสอบสิทธิ์ LINE...")
@@ -64,6 +65,7 @@ export default function SettingsPage(){
    setBlockedEnabled(Boolean(data?.blocked_enabled))
    setCashPercent(String(Number(data?.cash_percent||0)))
    setRoundDateInput(displayRoundInput(data?.round_date_override||""))
+   setPreviousRoundNumber(String(data?.previous_round_number||"").replace(/\D/g,"").slice(0,6))
    setMessage(`เข้าระบบแล้ว: ${current.displayName}`)
   }catch(caught){
    setError(caught instanceof Error?caught.message:"เข้าตั้งค่าไม่สำเร็จ")
@@ -83,6 +85,10 @@ export default function SettingsPage(){
 
   const parsedRound=roundDateInput.trim()?parseRoundInput(roundDateInput):null
   if(roundDateInput.trim()&&!parsedRound){setError("รอบวันที่ต้องเป็นรูปแบบ วัน/เดือน/ปี เช่น 02/08/69");return}
+  if(previousRoundNumber&& !/^\d{6}$/.test(previousRoundNumber)){
+   setError("เลขรอบก่อนต้องมี 6 หลัก")
+   return
+  }
   setSaving(true);setError("");setMessage("กำลังบันทึก...")
   try{
    const categoryAmounts=Object.fromEntries(
@@ -96,6 +102,7 @@ export default function SettingsPage(){
     p_cash_percent:pct,
     p_blocked_enabled:blockedEnabled,
     p_round_date:parsedRound,
+    p_previous_round_number:previousRoundNumber||null,
    })
    if(error)throw new Error(error.message)
    if(!data?.success)throw new Error("บันทึกการตั้งค่าไม่สำเร็จ")
@@ -174,6 +181,19 @@ export default function SettingsPage(){
      <b>หักยอดเมื่อเลือก “สด” (%)</b>
      <input inputMode="decimal" value={cashPercent} onChange={e=>setCashPercent(e.target.value.replace(/[^0-9.]/g,""))}/>
      <small style={{display:"block"}}>ตัวอย่าง 30% : ยอด 1,000 เหลือ 700</small>
+    </label>
+
+    <label>
+     <b>เลขรอบก่อน 6 หลัก</b>
+     <input
+      inputMode="numeric"
+      pattern="[0-9]*"
+      maxLength={6}
+      value={previousRoundNumber}
+      onChange={e=>setPreviousRoundNumber(e.target.value.replace(/\D/g,"").slice(0,6))}
+      placeholder="000000"
+     />
+     <small style={{display:"block"}}>จะแสดงด้านบนสุดของหน้าเล่น</small>
     </label>
 
     <label>

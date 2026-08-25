@@ -25,6 +25,7 @@ export default function PlayPage(){
  const [categoryAmounts,setCategoryAmounts]=useState<Record<string,number>>({})
  const [closeTime,setCloseTime]=useState("")
  const [roundDate,setRoundDate]=useState("")
+ const [previousRoundNumber,setPreviousRoundNumber]=useState("")
  const [attachment,setAttachment]=useState<File|null>(null)
  const [attachmentPreview,setAttachmentPreview]=useState("")
 
@@ -55,6 +56,7 @@ export default function PlayPage(){
     }
     if(data.close_time)setCloseTime(String(data.close_time).slice(0,5))
     if(data.round_date)setRoundDate(String(data.round_date).slice(0,10))
+    if(data.previous_round_number)setPreviousRoundNumber(String(data.previous_round_number).replace(/\D/g,"").slice(0,6))
    }
   },()=>{})
  },[])
@@ -152,6 +154,10 @@ export default function PlayPage(){
    setMessage("กรุณาเพิ่มรายการก่อนทบทวน")
    return
   }
+  if(cash&&!attachment){
+   setMessage("เลือกสดต้องแนบภาพก่อนทบทวน")
+   return
+  }
   setMessage("")
   setReviewing(true)
  }
@@ -168,6 +174,7 @@ export default function PlayPage(){
 
  async function submit(){
   if(!items.length||sending)return
+  if(cash&&!attachment){setMessage("เลือกสดต้องแนบภาพก่อนส่ง");setReviewing(false);return}
   if(!open){setMessage("ระบบปิดรับรายการอยู่ กรุณาเข้าเมนูตั้งค่าแล้วเปิดรับรายการ");return}
   setSending(true)
   setMessage("กำลังบันทึก...")
@@ -264,6 +271,22 @@ export default function PlayPage(){
  }
 
  return <main className="play-mobile">
+  <section style={{width:"100%",padding:"10px 12px 8px",boxSizing:"border-box"}}>
+   <small style={{display:"block",textAlign:"center",marginBottom:"4px",fontWeight:700}}>รอบก่อน</small>
+   <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:"6px",width:"100%"}}>
+    {(previousRoundNumber||"------").padEnd(6,"-").slice(0,6).split("").map((digit,index)=><div
+     key={index}
+     style={{
+      minWidth:0,height:"54px",display:"flex",alignItems:"center",justifyContent:"center",
+      fontSize:"32px",fontWeight:800,fontVariantNumeric:"tabular-nums",
+      border:"1px solid #bbb",borderRadius:"10px",
+      background:"linear-gradient(180deg,#fafafa 0%,#e6e6e6 48%,#ffffff 52%,#dcdcdc 100%)",
+      boxShadow:"inset 0 1px 2px rgba(0,0,0,.12)"
+     }}
+    >{digit}</div>)}
+   </div>
+  </section>
+
   <header className="play-title" style={{alignItems:"flex-start"}}>
    <button type="button" aria-label="ปิดหน้าจอ" onClick={close}>×</button>
    <div style={{flex:1}}>
@@ -271,8 +294,16 @@ export default function PlayPage(){
      <h1 style={{margin:0}}>เลือกเลข</h1>
      <strong style={{fontSize:"14px",whiteSpace:"nowrap"}}>{roundDate?`รอบวันที่ ${roundLabel(roundDate)}`:""}</strong>
     </div>
-    {!!blockedValues.length&&<div style={{marginTop:"4px",textAlign:"left"}}>
-     <strong style={{fontSize:"1.5rem",lineHeight:1.2}}>เลขงด {blockedValues.join(" ")}</strong>
+    {!!blockedValues.length&&<div style={{marginTop:"4px",textAlign:"left",maxWidth:"100%"}}>
+     <strong style={{
+      fontSize:blockedValues.join(" ").length>22?"clamp(16px,4.5vw,21px)":"clamp(20px,5.8vw,28px)",
+      lineHeight:1.15,
+      display:"-webkit-box",
+      WebkitLineClamp:2,
+      WebkitBoxOrient:"vertical",
+      overflow:"hidden",
+      overflowWrap:"anywhere"
+     }}>งด {blockedValues.join(" ")}</strong>
     </div>}
    </div>
    <span/>

@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from "react"
 import { adminRpc, ensureLineAdminSession, type ClientAdminSession } from "../../../lib/line-admin-client"
 
 type ReportItem={id:number;value:string;category_label:string;heart:number;cash?:boolean}
-type Report={id:string;reference_code:string;member_name:string;item_count:number;total:number;imported_at:string;attachment_url?:string|null;round_date?:string|null;items:ReportItem[]}
-type ItemView=ReportItem&{imported_at:string;round_date?:string|null}
+type Report={id:string;reference_code:string;member_name:string;item_count:number;total:number;imported_at:string;submitted_at?:string|null;attachment_url?:string|null;round_date?:string|null;items:ReportItem[]}
+type ItemView=ReportItem&{imported_at:string;submitted_at?:string|null;round_date?:string|null}
 type MemberGroup={name:string;items:ItemView[];total:number;images:string[];rounds:string[]}
 type DateGroup={dateKey:string;dateLabel:string;members:MemberGroup[];total:number}
 
@@ -24,6 +24,7 @@ export default function BackofficePage(){
  const [rows,setRows]=useState<Report[]>([])
  const [error,setError]=useState("")
  const [loading,setLoading]=useState(true)
+ const [exportType,setExportType]=useState<"self"|"office"|"analysis">("self")
 
  async function load(){
   setLoading(true);setError("")
@@ -53,7 +54,7 @@ export default function BackofficePage(){
    const mk=(row.member_name||"สมาชิก").trim().toLowerCase()
    let m=g.members.get(mk)
    if(!m){m={name:row.member_name||"สมาชิก",items:[],total:0,images:[],rounds:[]};g.members.set(mk,m)}
-   m.items.push(...(row.items||[]).map(item=>({...item,imported_at:row.imported_at,round_date:row.round_date})))
+   m.items.push(...(row.items||[]).map(item=>({...item,imported_at:row.imported_at,submitted_at:row.submitted_at,round_date:row.round_date})))
    m.total+=Number(row.total||0)
    if(row.attachment_url&&!m.images.includes(row.attachment_url))m.images.push(row.attachment_url)
    if(row.round_date&&!m.rounds.includes(row.round_date))m.rounds.push(row.round_date)
@@ -62,7 +63,38 @@ export default function BackofficePage(){
   return [...map.entries()].sort(([a],[b])=>b.localeCompare(a)).map(([dateKey,g])=>({dateKey,dateLabel:g.label,members:[...g.members.values()],total:g.total}))
  },[rows])
 
- function csvText(){
+ function csvText(type:"self"|"office"|"analysis"=exportType){
+  if(type==="office"){
+   const lines=[["รอบเล่น","วันที่ส่ง","เลขที่เลือก","ประเภท","ยอด"].join(",")]
+   let grand=0
+   for(const g of groups)for(const m of g.members)m.items.forEach(item=>{
+    const amount=Number(item.heart)||0
+    grand+=amount
+    const cells=[
+     item.round_date?`รอบวันที่ ${roundLabel(item.round_date)}`:"",
+     dateTime(item.submitted_at||item.imported_at),
+     item.value,
+     item.category_label,
+     String(amount),
+    ]
+    lines.push(cells.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","))
+   })
+   lines.push(`"รวมยอดทั้งหมด","","","","${grand}"`)
+   return "\ufeff"+lines.join("\n")
+  }
+
+  if(type==="analysis"){
+   const lines=[["เลข","ประเภท","รางวัล"].join(",")]
+   const seen=new Set<string>()
+   for(const g of groups)for(const m of g.members)for(const item of m.items){
+    const key=`${item.value}|${item.category_label}`
+    if(seen.has(key))continue
+    seen.add(key)
+    lines.push([item.value,item.category_label,""].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","))
+   }
+   return "\ufeff"+lines.join("\n")
+  }
+
   const lines=[["วันที่นำเข้า","รอบวันที่","ชื่อ","เลข","ประเภท","ยอด","สด","ยอดรวม"].join(",")]
   for(const g of groups)for(const m of g.members)m.items.forEach((item,index)=>{
    const cells=[dateTime(item.imported_at),item.round_date?roundLabel(item.round_date):"",m.name,item.value,item.category_label,String(Number(item.heart)||0),item.cash?"สด":"",index===0?String(m.total):""]
@@ -72,15 +104,17 @@ export default function BackofficePage(){
  }
 
  function exportReport(){
-  const blob=new Blob([csvText()],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a")
-  a.href=url;a.download=`LekHub-activity-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(url)
+  const blob=new Blob([csvText(exportType)],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a")
+  const suffix=exportType==="self"?"เก็บเอง":exportType==="office"?"ส่งสำนักงาน":"วิเคราะห์"
+  a.href=url;a.download=`LekHub-${suffix}-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(url)
  }
  async function shareReport(){
-  const file=new File([csvText()],`LekHub-activity-${new Date().toISOString().slice(0,10)}.csv`,{type:"text/csv"})
+  const suffix=exportType==="self"?"เก็บเอง":exportType==="office"?"ส่งสำนักงาน":"วิเคราะห์"
+  const file=new File([csvText(exportType)],`LekHub-${suffix}-${new Date().toISOString().slice(0,10)}.csv`,{type:"text/csv"})
   if(navigator.share){
    try{
-    if(navigator.canShare?.({files:[file]}))await navigator.share({title:"ตารางกิจกรรม LekHub",files:[file]})
-    else await navigator.share({title:"ตารางกิจกรรม LekHub",text:"ตารางกิจกรรม LekHub"})
+    if(navigator.canShare?.({files:[file]}))await navigator.share({title:`ตารางกิจกรรม LekHub - ${suffix}`,files:[file]})
+    else await navigator.share({title:`ตารางกิจกรรม LekHub - ${suffix}`,text:`ตารางกิจกรรม LekHub - ${suffix}`})
     return
    }catch{}
   }
@@ -96,7 +130,12 @@ export default function BackofficePage(){
    <header className="admin-topbar"><div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>ตารางกิจกรรม</h1></div></header>
    {loading&&<p>กำลังโหลด...</p>}
    {error&&<div className="admin-error">{error}<br/><button type="button" onClick={load}>ลองใหม่</button></div>}
-   <div style={{display:"flex",gap:"10px",flexWrap:"wrap",marginBottom:"18px"}}>
+   <div style={{display:"flex",gap:"10px",flexWrap:"wrap",marginBottom:"18px",alignItems:"center"}}>
+    <select value={exportType} onChange={e=>setExportType(e.target.value as "self"|"office"|"analysis")}>
+     <option value="self">เก็บเอง</option>
+     <option value="office">ส่งสำนักงาน</option>
+     <option value="analysis">วิเคราะห์</option>
+    </select>
     <button type="button" onClick={exportReport}>ส่งออกรายงาน</button>
     <button type="button" onClick={shareReport}>แชร์</button>
     <button type="button" onClick={()=>window.print()}>ปริ้น</button>
