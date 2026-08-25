@@ -153,8 +153,8 @@ function Home({setPage,news,profile,lang,initialGrab=false}){
   [T(lang,'สิทธิ์และคะแนน','Points & access','积分与权限'),Gift,'rewards','🎁'],
   [T(lang,'หลังบ้าน','Back office','后台管理'),ShieldCheck,'admin','⚙️']
  ];
- const welcomeTitle=news[0]?translatedValue(localText(news[0],'title',lang),lang):T(lang,'ยินดีต้อนรับสู่ LekHub','Welcome to LekHub','欢迎来到 LekHub');
- const welcomeBody=news[0]?translatedValue(localText(news[0],'body',lang),lang):T(lang,'ระบบใช้งานผ่าน LINE OA สำหรับสมาชิก แอดมิน และหลังบ้าน','A LINE OA workflow for members, admin, and back office','适用于会员、管理员与后台的 LINE OA 系统');
+ const welcomeTitle=T(lang,'ยินดีต้อนรับสู่ LekHub','Welcome to LekHub','欢迎来到 LekHub');
+ const welcomeBody=T(lang,'ระบบใช้งานผ่าน LINE OA สำหรับสมาชิก แอดมิน และหลังบ้าน','A LINE OA workflow for members, admin, and back office','适用于会员、管理员与后台的 LINE OA 系统');
  return <>
   <section className="hero lekhubHero">
    <img className="storeLogo homeStoreLogo" src="/LekHub-logo.png" alt="LekHub"/>
