@@ -49,6 +49,15 @@ export default function PlayPage(){
   setMessage("")
  }
 
+ function openReview(){
+  if(!items.length){
+   setMessage("กรุณาเพิ่มรายการก่อนทบทวน")
+   return
+  }
+  setMessage("")
+  setReviewing(true)
+ }
+
  async function submit(){
   const activeLiff=liff
   if(!items.length||sending)return
@@ -76,37 +85,25 @@ export default function PlayPage(){
     altText:`รายการใหม่ ${code} รวม ${total}`,
     contents:{
      type:"bubble",
-     header:{
-      type:"box",layout:"horizontal",backgroundColor:"#B90000",paddingAll:"16px",
-      contents:[
-       {type:"text",text:"รายการเลือกเลขใหม่",color:"#FFFFFF",weight:"bold",size:"lg"},
-       {type:"text",text:"รอตรวจสอบ",color:"#111111",align:"end",flex:1}
-      ]
-     },
-     body:{
-      type:"box",layout:"vertical",
-      contents:[
-       {type:"text",text:`สมาชิก  ${profile.displayName}`,weight:"bold"},
-       {type:"text",text:`รหัส  ${data.reference_code||code}`,margin:"md"},
-       {type:"separator",margin:"lg"},
-       ...items.map(x=>({
-        type:"box",layout:"horizontal",paddingAll:"10px",
-        contents:[
-         {type:"text",text:x.value,weight:"bold",size:"xl",flex:2},
-         {type:"text",text:`${x.category_label} ${x.heart}`,size:"sm",wrap:true,flex:5}
-        ]
-       })),
-       {type:"separator",margin:"md"},
-       {type:"text",text:`${items.length} รายการ     รวม ${total.toLocaleString()}`,weight:"bold",size:"lg",margin:"lg",align:"center"}
-      ]
-     },
-     footer:{
-      type:"box",layout:"vertical",
-      contents:[{
-       type:"button",style:"primary",color:"#C40000",
-       action:{type:"uri",label:"ส่งเข้าหลังบ้าน",uri:"https://lek-hub.vercel.app/admin/reports"}
-      }]
-     }
+     header:{type:"box",layout:"horizontal",backgroundColor:"#B90000",paddingAll:"16px",contents:[
+      {type:"text",text:"รายการเลือกเลขใหม่",color:"#FFFFFF",weight:"bold",size:"lg"},
+      {type:"text",text:"รอตรวจสอบ",color:"#111111",align:"end",flex:1}
+     ]},
+     body:{type:"box",layout:"vertical",contents:[
+      {type:"text",text:`สมาชิก  ${profile.displayName}`,weight:"bold"},
+      {type:"text",text:`รหัส  ${data.reference_code||code}`,margin:"md"},
+      {type:"separator",margin:"lg"},
+      ...items.map(x=>({type:"box",layout:"horizontal",paddingAll:"10px",contents:[
+       {type:"text",text:x.value,weight:"bold",size:"xl",flex:2},
+       {type:"text",text:`${x.category_label} ${x.heart}`,size:"sm",wrap:true,flex:5}
+      ]})),
+      {type:"separator",margin:"md"},
+      {type:"text",text:`${items.length} รายการ     รวม ${total.toLocaleString()}`,weight:"bold",size:"lg",margin:"lg",align:"center"}
+     ]},
+     footer:{type:"box",layout:"vertical",contents:[{
+      type:"button",style:"primary",color:"#C40000",
+      action:{type:"uri",label:"ส่งเข้าหลังบ้าน",uri:"https://lek-hub.vercel.app/admin/reports"}
+     }]}
     }
    }])
   }catch{}
@@ -126,88 +123,53 @@ export default function PlayPage(){
 
  return <main className="play-mobile">
   <header className="play-title">
-   <button aria-label="ปิดหน้าจอ" onClick={close}>×</button>
-   <h1>เลือกเลข</h1>
-   <span/>
+   <button type="button" aria-label="ปิดหน้าจอ" onClick={close}>×</button>
+   <h1>เลือกเลข</h1><span/>
   </header>
 
   <section className="line-person">
-   {profile?.pictureUrl
-    ?<img src={profile.pictureUrl} alt="รูปโปรไฟล์ LINE"/>
-    :<div className="line-avatar">LINE</div>}
+   {profile?.pictureUrl?<img src={profile.pictureUrl} alt="รูปโปรไฟล์ LINE"/>:<div className="line-avatar">LINE</div>}
    <b>{profile?.displayName||"กำลังโหลดชื่อ LINE..."}</b>
    <strong>{open?`ปิดรับ ${closeTime}`:"ปิดรับแล้ว"}</strong>
   </section>
 
   <section className="pick-card">
-   <label>ประเภท
-    <select value={category} onChange={e=>setCategory(e.target.value)}>
-     {types.map(([k,n])=><option key={k} value={k}>{n}</option>)}
-    </select>
-   </label>
-   <label>เลข
-    <input inputMode="numeric" maxLength={6} value={value}
-     onChange={e=>setValue(e.target.value.replace(/\D/g,""))} placeholder="456"/>
-   </label>
-   <label>ยอด
-    <input inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="100 × 100"/>
-   </label>
+   <label>ประเภท<select value={category} onChange={e=>setCategory(e.target.value)}>
+    {types.map(([k,n])=><option key={k} value={k}>{n}</option>)}
+   </select></label>
+   <label>เลข<input inputMode="numeric" maxLength={6} value={value} onChange={e=>setValue(e.target.value.replace(/\D/g,""))} placeholder="456"/></label>
+   <label>ยอด<input inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="100 × 100"/></label>
    <small>ใส่ 100 × 100 เพื่อเลือกเป็นคู่</small>
-   <button className="red-action" onClick={add}>＋ เพิ่ม</button>
+   <button type="button" className="red-action" onClick={add}>＋ เพิ่ม</button>
   </section>
 
-  {!!items.length&&
-   <section className="picked-list">
-    {items.map((x,i)=>
-     <div key={`${x.value}-${i}`}>
-      <b>{x.value}</b>
-      <span>{x.category_label} {x.heart.toLocaleString()}</span>
-      <button onClick={()=>setItems(v=>v.filter((_,j)=>j!==i))}>⌫</button>
-     </div>
-    )}
-   </section>
-  }
+  {!!items.length&&<section className="picked-list">
+   {items.map((x,i)=><div key={`${x.value}-${i}`}>
+    <b>{x.value}</b><span>{x.category_label} {x.heart.toLocaleString()}</span>
+    <button type="button" onClick={()=>setItems(v=>v.filter((_,j)=>j!==i))}>⌫</button>
+   </div>)}
+  </section>}
 
   <section className="send-card">
-   <div>
-    <b>{items.length} รายการ</b>
-    <span>รวม <strong>{total.toLocaleString()}</strong></span>
-   </div>
-   <button
-    className="red-action"
-    disabled={!items.length||sending}
-    onClick={()=>setReviewing(true)}
-   >
-    ทบทวนก่อนส่ง
-   </button>
+   <div><b>{items.length} รายการ</b><span>รวม <strong>{total.toLocaleString()}</strong></span></div>
+   <button type="button" className="red-action" onClick={openReview}>ทบทวนก่อนส่ง</button>
    {message&&<p className="play-message">{message}</p>}
   </section>
 
-  {reviewing&&
-   <div className="review-overlay" role="dialog" aria-modal="true">
-    <section className="review-sheet">
-     <h2>ทบทวนรายการ</h2>
-     <div className="review-items">
-      {items.map((x,i)=>
-       <div key={`${x.value}-${i}`}>
-        <b>{x.value}</b>
-        <span>{x.category_label}</span>
-        <strong>{x.heart.toLocaleString()}</strong>
-       </div>
-      )}
-     </div>
-     <div className="review-sum">
-      <span>{items.length} รายการ</span>
-      <b>รวม {total.toLocaleString()}</b>
-     </div>
-     <button className="red-action" disabled={sending} onClick={submit}>
-      {sending?"กำลังส่ง...":"บันทึกส่ง"}
-     </button>
-     <button className="review-back" disabled={sending} onClick={()=>setReviewing(false)}>
-      กลับไปแก้ไข
-     </button>
-    </section>
-   </div>
-  }
+  {reviewing&&<div className="review-overlay" role="dialog" aria-modal="true">
+   <section className="review-sheet">
+    <h2>ทบทวนรายการ</h2>
+    <div className="review-items">
+     {items.map((x,i)=><div key={`${x.value}-${i}`}>
+      <b>{x.value}</b><span>{x.category_label}</span><strong>{x.heart.toLocaleString()}</strong>
+     </div>)}
+    </div>
+    <div className="review-sum"><span>{items.length} รายการ</span><b>รวม {total.toLocaleString()}</b></div>
+    <button type="button" className="red-action" disabled={sending} onClick={submit}>
+     {sending?"กำลังส่ง...":"บันทึกส่ง"}
+    </button>
+    <button type="button" className="review-back" disabled={sending} onClick={()=>setReviewing(false)}>กลับไปแก้ไข</button>
+   </section>
+  </div>}
  </main>
 }
