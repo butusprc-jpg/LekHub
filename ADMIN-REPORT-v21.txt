@@ -1,0 +1,9 @@
+LekHub v21 - Member Submit + Admin Report Inbox
+
+- /member/play now reviews and submits entries to Supabase.
+- /admin shows live totals from the production submission store.
+- /admin/reports lists submissions, their items, totals, references, and timestamps.
+- Admin can mark a submission pending, reviewed, or cancelled.
+- Existing protected RPC and RLS design is reused; no duplicate table was created.
+- Database transaction verification passed: one submission and one item were stored, then rolled back.
+- Vercel remains configured to build the Next.js project at repository root.
