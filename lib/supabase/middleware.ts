@@ -19,31 +19,41 @@ export async function updateSession(request: NextRequest) {
     },
   })
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // Validate the JWT and refresh cookies before doing any authorization work.
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims()
+  const userId = claimsError ? null : claimsData?.claims?.sub
   const isLoginPage = request.nextUrl.pathname === "/admin/login"
   const isProtectedAdminPage = request.nextUrl.pathname.startsWith("/admin") && !isLoginPage
 
-  if (!user && isProtectedAdminPage) {
+  function redirectWithSessionState(url: URL) {
+    const redirectResponse = NextResponse.redirect(url)
+    response.cookies.getAll().forEach(cookie => redirectResponse.cookies.set(cookie))
+    response.headers.forEach((value, name) => redirectResponse.headers.set(name, value))
+    return redirectResponse
+  }
+
+  if (!userId && isProtectedAdminPage) {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = "/admin/login"
     loginUrl.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`)
-    return NextResponse.redirect(loginUrl)
+    return redirectWithSessionState(loginUrl)
   }
 
-  if (user && isProtectedAdminPage) {
+  if (userId && isProtectedAdminPage) {
     const { data: adminProfile } = await supabase
       .from("admin_profiles")
       .select("user_id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("is_active", true)
       .maybeSingle()
 
     if (!adminProfile) {
+      await supabase.auth.signOut()
       const loginUrl = request.nextUrl.clone()
       loginUrl.pathname = "/admin/login"
       loginUrl.search = ""
       loginUrl.searchParams.set("error", "forbidden")
-      return NextResponse.redirect(loginUrl)
+      return redirectWithSessionState(loginUrl)
     }
   }
 

@@ -20,5 +20,8 @@ export default async function AdminPage() {
     <button>เช็คข้อมูล</button>
     <button>นำเข้าหลังบ้าน</button>
     <Link href="/admin/reports">รายงาน</Link>
+    <form action="/auth/signout" method="post">
+      <button type="submit">ออกจากระบบ</button>
+    </form>
   </main>
 }

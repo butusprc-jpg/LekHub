@@ -1,0 +1,22 @@
+LekHub Supabase Auth / Protected Routes v18
+
+- Protects every /admin route except /admin/login.
+- Validates the JWT with auth.getClaims() before authorization.
+- Preserves refreshed Supabase cookies across redirects.
+- Checks public.admin_profiles and requires is_active = true.
+- Supports password login and passwordless email magic-link login.
+- Adds /auth/callback for PKCE session exchange.
+- Prevents unsafe external redirect values in the next parameter.
+- Contains no service-role or secret Supabase key.
+
+Production database verification:
+- tusprc@gmail.com is confirmed.
+- role = owner
+- is_active = true
+
+Required Vercel environment variables:
+- NEXT_PUBLIC_SUPABASE_URL
+- NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+
+Required Supabase Redirect URL after deployment:
+- https://YOUR-VERCEL-DOMAIN/auth/callback

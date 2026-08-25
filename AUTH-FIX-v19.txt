@@ -1,0 +1,12 @@
+LekHub v19 Auth + Protected Routes
+
+Base: v18-AUTH-CALLBACK
+
+Changes:
+- Preserve Supabase refreshed cookies and cache/session headers on auth redirects.
+- Sign out authenticated users that are not active admins.
+- Add server-side guard to /admin/reports as defense in depth.
+- Add POST /auth/signout and logout button.
+- Keep member/rules/report routes public.
+- Continue using @supabase/ssr and getClaims() in middleware.
+- Keep existing Supabase project ref uhpgnwclyzjnmnbrnglb.
