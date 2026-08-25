@@ -1,0 +1,5 @@
+LekHub v22 button validation fix
+
+- The review button is clickable whenever submissions are open.
+- Missing member name, number, or amount now shows a clear Thai message.
+- Incomplete fields are highlighted in red instead of silently disabling the button.
