@@ -72,6 +72,15 @@ export default function ReportsPage() {
     }finally{setWorking("")}
   }
 
+  async function reviewOrImport(row:Submission){
+    if(!session||working||row.imported_at)return
+    if(row.status!=="reviewed"){
+      await setStatus(row.id,"reviewed")
+      return
+    }
+    await importSubmission(row.id)
+  }
+
   return <main className="admin-shell">
     <aside className="admin-sidebar">
       <div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>OA BACKOFFICE</small></div></div>
@@ -119,10 +128,16 @@ export default function ReportsPage() {
             <button
               type="button"
               className="red-action"
-              disabled={row.status!=="reviewed"||Boolean(row.imported_at)||working===row.id}
-              onClick={()=>importSubmission(row.id)}
+              disabled={Boolean(row.imported_at)||working===row.id}
+              onClick={()=>reviewOrImport(row)}
             >
-              {row.imported_at?"นำเข้าหลังบ้านแล้ว":row.status==="reviewed"?"นำเข้าหลังบ้าน":"ตรวจรายการก่อนนำเข้า"}
+              {row.imported_at
+                ?"นำเข้าหลังบ้านแล้ว"
+                :working===row.id
+                  ?"กำลังดำเนินการ..."
+                  :row.status==="reviewed"
+                    ?"นำเข้าหลังบ้าน"
+                    :"ตรวจรายการก่อนนำเข้า"}
             </button>
           </div>
         </article>)}
