@@ -1,11 +1,56 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { adminRpc, ensureLineAdminSession, type ClientAdminSession } from "../../../lib/line-admin-client"
 
-type ReportItem={id:number;value:string;category_label:string;heart:number}
-type Report={id:string;reference_code:string;member_name:string;item_count:number;total:number;imported_at:string;items:ReportItem[]}
+type ReportItem={
+ id:number
+ value:string
+ category_label:string
+ heart:number
+ cash?:boolean
+}
+
+type Report={
+ id:string
+ reference_code:string
+ line_user_id:string
+ member_name:string
+ item_count:number
+ total:number
+ imported_at:string
+ items:ReportItem[]
+}
+
+type MemberGroup={
+ name:string
+ items:ReportItem[]
+ total:number
+}
+
+type DateGroup={
+ dateKey:string
+ dateLabel:string
+ members:MemberGroup[]
+ total:number
+}
+
+function bangkokDateKey(value:string){
+ const parts=new Intl.DateTimeFormat("en-CA",{
+  timeZone:"Asia/Bangkok",
+  year:"numeric",month:"2-digit",day:"2-digit",
+ }).formatToParts(new Date(value))
+ const get=(type:string)=>parts.find(p=>p.type===type)?.value||""
+ return `${get("year")}-${get("month")}-${get("day")}`
+}
+
+function thaiDate(value:string){
+ return new Intl.DateTimeFormat("th-TH",{
+  timeZone:"Asia/Bangkok",
+  day:"numeric",month:"long",year:"numeric",
+ }).format(new Date(value))
+}
 
 export default function BackofficePage(){
  const [session,setSession]=useState<ClientAdminSession|null>(null)
@@ -18,14 +63,51 @@ export default function BackofficePage(){
   try{
    const current=await ensureLineAdminSession()
    setSession(current)
-   const {data,error}=await adminRpc(current,"lekhub_line_admin_list_backoffice_reports",{p_limit:300})
+   const {data,error}=await adminRpc(current,"lekhub_line_admin_list_backoffice_reports",{p_limit:500})
    if(error)throw new Error(error.message)
    setRows((data||[]) as Report[])
-  }catch(caught){setError(caught instanceof Error?caught.message:"โหลดรายงานหลังบ้านไม่สำเร็จ")}
-  finally{setLoading(false)}
+  }catch(caught){
+   setError(caught instanceof Error?caught.message:"โหลดตารางกิจกรรมไม่สำเร็จ")
+  }finally{
+   setLoading(false)
+  }
  }
 
  useEffect(()=>{load()},[])
+
+ const groups=useMemo<DateGroup[]>(()=>{
+  const byDate=new Map<string,{label:string,members:Map<string,MemberGroup>,total:number}>()
+
+  for(const report of rows){
+   const dateKey=bangkokDateKey(report.imported_at)
+   let date=byDate.get(dateKey)
+   if(!date){
+    date={label:thaiDate(report.imported_at),members:new Map(),total:0}
+    byDate.set(dateKey,date)
+   }
+
+   // User requirement: repeated submissions with the same displayed name are combined.
+   const memberKey=(report.member_name||"สมาชิก").trim().toLowerCase()
+   let member=date.members.get(memberKey)
+   if(!member){
+    member={name:report.member_name||"สมาชิก",items:[],total:0}
+    date.members.set(memberKey,member)
+   }
+
+   member.items.push(...(report.items||[]))
+   member.total+=Number(report.total||0)
+   date.total+=Number(report.total||0)
+  }
+
+  return [...byDate.entries()]
+   .sort(([a],[b])=>b.localeCompare(a))
+   .map(([dateKey,date])=>({
+    dateKey,
+    dateLabel:date.label,
+    members:[...date.members.values()],
+    total:date.total,
+   }))
+ },[rows])
 
  return <main className="admin-shell">
   <aside className="admin-sidebar">
@@ -33,21 +115,61 @@ export default function BackofficePage(){
    <nav>
     <Link href="/admin">ภาพรวม</Link>
     <Link href="/admin/reports">กล่องรับจาก OA</Link>
-    <Link className="active" href="/admin/backoffice">รายงานหลังบ้าน</Link>
+    <Link className="active" href="/admin/backoffice">ตารางกิจกรรม</Link>
     <Link href="/admin/settings">ตั้งค่าระบบ</Link>
    </nav>
   </aside>
+
   <section className="admin-content">
-   <header className="admin-topbar"><div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>รายงานหลังบ้าน</h1></div></header>
+   <header className="admin-topbar">
+    <div>
+     <small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small>
+     <h1>ตารางกิจกรรม</h1>
+    </div>
+   </header>
+
    {loading&&<p>กำลังโหลด...</p>}
    {error&&<div className="admin-error">{error}<br/><button type="button" onClick={load}>ลองใหม่</button></div>}
-   <div className="submission-grid">
-    {rows.map(row=><article className="submission-card" key={row.id}>
-     <div className="submission-head"><div><h2>{row.member_name}</h2><small>{row.reference_code}</small></div><b>นำเข้าแล้ว</b></div>
-     <div className="submission-items">{row.items.map(item=><div key={item.id}><b>{item.value}</b><span>{item.category_label}</span><strong>{Number(item.heart).toLocaleString()}</strong></div>)}</div>
-     <div className="submission-total"><span>{row.item_count} รายการ</span><b>รวม {Number(row.total).toLocaleString()}</b></div>
-    </article>)}
-   </div>
+
+   {groups.map(group=><section key={group.dateKey} style={{marginBottom:"28px"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:"16px",marginBottom:"10px"}}>
+     <h2 style={{margin:0}}>{group.dateLabel}</h2>
+     <strong>รวม {group.total.toLocaleString()}</strong>
+    </div>
+
+    <div style={{overflowX:"auto"}}>
+     <table style={{width:"100%",borderCollapse:"collapse",minWidth:"620px"}}>
+      <thead>
+       <tr>
+        <th style={{textAlign:"left",padding:"10px"}}>ชื่อ</th>
+        <th style={{textAlign:"left",padding:"10px"}}>เลข + ประเภท + ยอด + สด</th>
+        <th style={{textAlign:"right",padding:"10px"}}>ยอดรวม</th>
+       </tr>
+      </thead>
+      <tbody>
+       {group.members.map(member=><tr key={`${group.dateKey}-${member.name}`}>
+        <td style={{verticalAlign:"top",padding:"12px",fontWeight:700}}>{member.name}</td>
+        <td style={{verticalAlign:"top",padding:"12px"}}>
+         <div style={{display:"grid",gap:"8px"}}>
+          {member.items.map((item,index)=><div
+           key={`${item.id}-${index}`}
+           style={{display:"grid",gridTemplateColumns:"0.8fr 1.2fr 0.8fr 0.6fr",gap:"10px",alignItems:"center"}}
+          >
+           <strong>{item.value}</strong>
+           <strong>{item.category_label}</strong>
+           <strong style={{textAlign:"right"}}>{Number(item.heart).toLocaleString()}</strong>
+           <strong style={{textAlign:"center"}}>{item.cash?"สด":"-"}</strong>
+          </div>)}
+         </div>
+        </td>
+        <td style={{verticalAlign:"top",padding:"12px",textAlign:"right",fontWeight:700}}>
+         {member.total.toLocaleString()}
+        </td>
+       </tr>)}
+      </tbody>
+     </table>
+    </div>
+   </section>)}
   </section>
  </main>
 }

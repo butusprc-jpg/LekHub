@@ -147,7 +147,7 @@ export default function PlayPage(){
    p_line_user_id:memberUserId,
    p_member_name:memberName,
    p_member_avatar:profile?.pictureUrl||null,
-   p_items:items
+   p_items:items.map(x=>({...x,cash}))
   })
 
   if(error||!data?.success){
@@ -179,7 +179,7 @@ export default function PlayPage(){
       {type:"separator",margin:"lg"},
       ...items.map(x=>({type:"box",layout:"horizontal",paddingAll:"10px",contents:[
        {type:"text",text:x.value,weight:"bold",size:"xl",flex:2},
-       {type:"text",text:`${x.category_label} ${x.heart}`,size:"sm",wrap:true,flex:5}
+       {type:"text",text:`${x.category_label} ${x.heart}${cash?" สด":""}`,size:"sm",wrap:true,flex:5}
       ]})),
       {type:"separator",margin:"md"},
       {type:"text",text:`${items.length} รายการ     รวม ${total.toLocaleString()}`,weight:"bold",size:"lg",margin:"lg",align:"center"}
@@ -240,6 +240,15 @@ export default function PlayPage(){
   </section>
 
   {!!items.length&&<section className="picked-list">
+   <div
+    className="picked-table-head"
+    style={{display:"grid",gridTemplateColumns:"1fr 1.4fr 1fr auto",alignItems:"center",gap:"12px",fontWeight:700}}
+   >
+    <strong>เลข</strong>
+    <strong>ประเภท</strong>
+    <strong style={{textAlign:"right"}}>ยอด</strong>
+    <span/>
+   </div>
    {items.map((x,i)=><div
     key={`${x.value}-${i}`}
     style={{display:"grid",gridTemplateColumns:"1fr 1.4fr 1fr auto",alignItems:"center",gap:"12px"}}
@@ -266,6 +275,9 @@ export default function PlayPage(){
    <section className="review-sheet">
     <h2>ทบทวนรายการ</h2>
     <div className="review-items">
+     <div style={{display:"grid",gridTemplateColumns:"1fr 1.4fr 1fr",gap:"12px",fontWeight:700}}>
+      <strong>เลข</strong><strong>ประเภท</strong><strong style={{textAlign:"right"}}>ยอด</strong>
+     </div>
      {items.map((x,i)=><div key={`${x.value}-${i}`}>
       <b>{x.value}</b><span>{x.category_label}</span><strong>{x.heart.toLocaleString()}</strong>
      </div>)}
