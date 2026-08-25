@@ -21,6 +21,8 @@ export default function LoginPage() {
         const response = await fetch("/api/admin/line-login", {
           method: "POST",
           headers: { "content-type": "application/json" },
+          credentials: "same-origin",
+          cache: "no-store",
           body: JSON.stringify({ accessToken }),
         })
 
@@ -39,7 +41,19 @@ export default function LoginPage() {
             : "/admin"
 
         setMessage(`ยืนยันสิทธิ์แล้ว: ${result.displayName || line.profile.displayName}`)
-        window.location.replace(nextPath)
+
+        // Verify the HttpOnly admin cookie was actually stored before leaving login.
+        const sessionResponse = await fetch("/api/admin/session-check", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        })
+        const sessionResult = await sessionResponse.json().catch(() => ({}))
+        if (!sessionResponse.ok || !sessionResult.ok) {
+          throw new Error("ยืนยันชื่อ LINE ได้แล้ว แต่ยังสร้าง session หลังบ้านไม่สำเร็จ")
+        }
+
+        window.location.assign(nextPath)
       } catch (caught) {
         if (cancelled) return
         setError(caught instanceof Error ? caught.message : "เข้าสู่หลังบ้านไม่สำเร็จ")

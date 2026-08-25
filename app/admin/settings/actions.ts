@@ -9,18 +9,13 @@ export async function saveSettings(formData: FormData) {
   if (!access) throw new Error("admin_required")
 
   const accepting = formData.get("accepting") === "on"
-  const closeTime = String(formData.get("close_time") || "")
-
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(closeTime)) {
-    throw new Error("invalid_close_time")
-  }
 
   const { error } = await createAdminClient().rpc(
     "lekhub_line_admin_update_settings",
     {
       p_token: access.token,
       p_accepting: accepting,
-      p_close_time: closeTime,
+      p_close_time: "23:59",
     },
   )
 

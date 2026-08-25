@@ -17,7 +17,6 @@ export default async function SettingsPage() {
 
   const settings = data || {
     accepting: true,
-    close_time: "15:30:00",
     timezone: "Asia/Bangkok",
   }
 
@@ -49,17 +48,6 @@ export default async function SettingsPage() {
           <input type="checkbox" name="accepting" defaultChecked={Boolean(settings.accepting)} />
         </label>
 
-        <label>
-          <span>เวลาปิดรับ</span>
-          <input
-            type="time"
-            name="close_time"
-            required
-            defaultValue={String(settings.close_time || "15:30").slice(0, 5)}
-          />
-        </label>
-
-        <p>เขตเวลา: {settings.timezone || "Asia/Bangkok"}</p>
         <button>บันทึกการตั้งค่า</button>
       </form>
     </section>

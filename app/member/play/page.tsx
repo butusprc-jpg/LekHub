@@ -10,7 +10,7 @@ export default function PlayPage(){
  const [profile,setProfile]=useState<LineProfile|null>(null),[liff,setLiff]=useState<LiffClient|null>(null)
  const [value,setValue]=useState(""),[category,setCategory]=useState("3topmix"),[amount,setAmount]=useState("")
  const [items,setItems]=useState<Item[]>([]),[message,setMessage]=useState("กำลังโหลดชื่อ LINE...")
- const [sending,setSending]=useState(false),[open,setOpen]=useState(true),[closeTime,setCloseTime]=useState("15:30")
+ const [sending,setSending]=useState(false),[open,setOpen]=useState(true)
  const [reviewing,setReviewing]=useState(false)
 
  useEffect(()=>{
@@ -23,7 +23,6 @@ export default function PlayPage(){
   createClient().rpc("get_lekhub_public_status").then(({data})=>{
    if(data&&typeof data==="object"){
     if("is_open" in data)setOpen(Boolean(data.is_open))
-    if("close_time" in data&&data.close_time)setCloseTime(String(data.close_time).slice(0,5))
    }
   },()=>{})
  },[])
@@ -70,7 +69,7 @@ export default function PlayPage(){
 
  async function submit(){
   if(!items.length||sending)return
-  if(!open){setMessage("ปิดรับรายการแล้ว กรุณาติดต่อแอดมินหากต้องการเปิดทดสอบ");return}
+  if(!open){setMessage("ระบบปิดรับรายการอยู่ กรุณาเข้าเมนูตั้งค่าแล้วเปิดรับรายการ");return}
   setSending(true)
   setMessage("กำลังบันทึก...")
   const activeLiff=liff
@@ -89,7 +88,6 @@ export default function PlayPage(){
   if(error||!data?.success){
    const raw=String(error?.message||data?.reason||"")
    const friendly=
-    raw.includes("outside_accepting_time") ? `ปิดรับรายการแล้ว เวลา ${closeTime} กรุณาเข้าเมนูตั้งค่าเพื่อเปลี่ยนเวลาปิดรับ` :
     raw.includes("not_accepting") ? "ระบบปิดรับรายการอยู่ กรุณาเข้าเมนูตั้งค่าแล้วเปิดรับรายการ" :
     raw.includes("rate_limited") ? "ส่งรายการถี่เกินไป กรุณารอสักครู่แล้วลองใหม่" :
     raw.includes("blocked_value") ? "มีเลขที่ระบบตั้งค่าไม่รับ กรุณาตรวจรายการ" :
@@ -152,7 +150,7 @@ export default function PlayPage(){
   <section className="line-person">
    {profile?.pictureUrl?<img src={profile.pictureUrl} alt="รูปโปรไฟล์ LINE"/>:<div className="line-avatar">LINE</div>}
    <b>{profile?.displayName||"กำลังโหลดชื่อ LINE..."}</b>
-   <strong>{open?`ปิดรับ ${closeTime}`:"ปิดรับแล้ว"}</strong>
+   <strong>{open?"เปิดรับรายการ":"ปิดรับแล้ว"}</strong>
   </section>
 
   <section className="pick-card">

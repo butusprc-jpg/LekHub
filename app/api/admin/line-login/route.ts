@@ -65,11 +65,14 @@ export async function POST(request: Request) {
       )
     }
 
-    const response = NextResponse.json({
-      ok: true,
-      displayName: data.display_name || profile.displayName,
-      role: data.role || "admin",
-    })
+    const response = NextResponse.json(
+      {
+        ok: true,
+        displayName: data.display_name || profile.displayName,
+        role: data.role || "admin",
+      },
+      { headers: { "cache-control": "no-store" } },
+    )
 
     response.cookies.set(ADMIN_COOKIE, String(data.session_token), {
       httpOnly: true,
