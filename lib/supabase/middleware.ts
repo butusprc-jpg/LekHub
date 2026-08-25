@@ -5,7 +5,16 @@ export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request })
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key) return response
+
+  // Fail closed. Missing auth configuration must never make protected routes public.
+  if (!url || !key) {
+    if (request.nextUrl.pathname === "/admin/login") return response
+
+    return NextResponse.json(
+      { error: "Admin authentication is temporarily unavailable" },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    )
+  }
 
   const supabase = createServerClient(url, key, {
     cookies: {
