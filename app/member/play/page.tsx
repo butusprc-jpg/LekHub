@@ -18,7 +18,14 @@ export default function PlayPage(){
   localStorage.removeItem("lekhub_member_key")
   setItems([])
   initLIFF()
-   .then(line=>{if(line){setProfile(line.profile);setLiff(line.liff);setMessage("")}})
+   .then(async line=>{
+    if(line){
+     setProfile(line.profile)
+     setLiff(line.liff)
+     const openingAdmin=await openAdminFromLiff(line)
+     if(!openingAdmin)setMessage("")
+    }
+   })
    .catch(()=>setMessage("กรุณาเปิดผ่าน LINE OA"))
   createClient().rpc("get_lekhub_public_status").then(({data})=>{
    if(data&&typeof data==="object"){
@@ -26,6 +33,43 @@ export default function PlayPage(){
    }
   },()=>{})
  },[])
+
+
+ async function openAdminFromLiff(line:{liff:LiffClient;profile:LineProfile}){
+  const params=new URLSearchParams(window.location.search)
+  const adminTarget=params.get("admin")
+  if(!adminTarget)return false
+
+  const accessToken=line.liff.getAccessToken()
+  if(!accessToken){
+   setMessage("ไม่พบ LINE access token สำหรับเข้าหลังบ้าน")
+   return true
+  }
+
+  setMessage(`กำลังเข้าหลังบ้าน: ${line.profile.displayName}`)
+  const response=await fetch("/api/admin/line-login",{
+   method:"POST",
+   headers:{"content-type":"application/json"},
+   credentials:"same-origin",
+   cache:"no-store",
+   body:JSON.stringify({accessToken}),
+  })
+  const result=await response.json().catch(()=>({}))
+  if(!response.ok||!result.ok){
+   setMessage(result.error==="line_user_not_admin"?"LINE นี้ไม่มีสิทธิ์เข้าหลังบ้าน":`เข้าหลังบ้านไม่สำเร็จ: ${result.error||"unknown"}`)
+   return true
+  }
+
+  const focus=params.get("focus")
+  const next=
+   adminTarget==="settings"?"/admin/settings":
+   adminTarget==="backoffice"?"/admin/backoffice":
+   focus?`/admin/reports?focus=${encodeURIComponent(focus)}`:
+   "/admin/reports"
+
+  window.location.replace(next)
+  return true
+ }
 
  const total=useMemo(()=>items.reduce((s,x)=>s+x.heart,0),[items])
 
@@ -121,7 +165,7 @@ export default function PlayPage(){
      ]},
      footer:{type:"box",layout:"vertical",contents:[{
       type:"button",style:"primary",color:"#C40000",
-      action:{type:"uri",label:"เปิดตรวจสอบรายการ",uri:`https://lek-hub.vercel.app/admin/reports?focus=${data.id}`}
+      action:{type:"uri",label:"เปิดตรวจสอบรายการ",uri:`https://liff.line.me/${(process.env.NEXT_PUBLIC_LINE_LIFF_ID||"2011199813-swdN7h10").trim()}?admin=reports&focus=${data.id}`}
      }]}
     }
     }])

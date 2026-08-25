@@ -41,19 +41,10 @@ export default function LoginPage() {
             : "/admin"
 
         setMessage(`ยืนยันสิทธิ์แล้ว: ${result.displayName || line.profile.displayName}`)
-
-        // Verify the HttpOnly admin cookie was actually stored before leaving login.
-        const sessionResponse = await fetch("/api/admin/session-check", {
-          method: "GET",
-          credentials: "same-origin",
-          cache: "no-store",
-        })
-        const sessionResult = await sessionResponse.json().catch(() => ({}))
-        if (!sessionResponse.ok || !sessionResult.ok) {
-          throw new Error("ยืนยันชื่อ LINE ได้แล้ว แต่ยังสร้าง session หลังบ้านไม่สำเร็จ")
-        }
-
-        window.location.assign(nextPath)
+        // The login API already created the server-side LINE admin session and Set-Cookie.
+        // Use a full document navigation so Server Components receive the new cookie.
+        await new Promise(resolve => window.setTimeout(resolve, 150))
+        window.location.replace(nextPath)
       } catch (caught) {
         if (cancelled) return
         setError(caught instanceof Error ? caught.message : "เข้าสู่หลังบ้านไม่สำเร็จ")
@@ -71,7 +62,10 @@ export default function LoginPage() {
     <main style={{maxWidth:520, margin:"60px auto", padding:24, textAlign:"center"}}>
       <h1>LekHub หลังบ้าน</h1>
       {message && <p role="status">{message}</p>}
-      {error && <p role="alert" style={{color:"#b00020", fontWeight:700}}>{error}</p>}
+      {error && <>
+        <p role="alert" style={{color:"#b00020", fontWeight:700}}>{error}</p>
+        <button type="button" onClick={()=>window.location.reload()}>ลองเข้าอีกครั้ง</button>
+      </>}
       <p>เปิดหน้านี้ผ่าน LINE OA ระบบจะตรวจสิทธิ์แอดมินให้อัตโนมัติ</p>
     </main>
   )

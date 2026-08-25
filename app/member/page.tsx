@@ -17,6 +17,9 @@ export default function Member() {
       <Link href="/rules">
         <span>ⓘ</span><div><b>กฎกติกา</b><small>อ่านรายละเอียดก่อนใช้งาน</small></div><strong>›</strong>
       </Link>
+      <a href="https://liff.line.me/2011199813-swdN7h10?admin=settings">
+        <span>⚙</span><div><b>ตั้งค่าระบบ (แอดมิน)</b><small>เปิดผ่าน LINE และตรวจสิทธิ์อัตโนมัติ</small></div><strong>›</strong>
+      </a>
     </section>
   </main>
 }

@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     response.cookies.set(ADMIN_COOKIE, String(data.session_token), {
       httpOnly: true,
       secure: true,
-      sameSite: "lax",
+      sameSite: "none",
       path: "/",
       maxAge: 60 * 60 * 12,
     })
