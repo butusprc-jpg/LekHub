@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th">
-      <body>{children}</body>
+      <body><Script src="https://static.line-scdn.net/liff/edge/2/sdk.js" strategy="beforeInteractive" />{children}</body>
     </html>
   );
 }
