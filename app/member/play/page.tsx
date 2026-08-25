@@ -58,29 +58,42 @@ export default function PlayPage(){
   setReviewing(true)
  }
 
+ function fallbackUserId(){
+  const key="lekhub_web_user_id"
+  let id=localStorage.getItem(key)
+  if(!id){
+   id=`web-${crypto.randomUUID()}`
+   localStorage.setItem(key,id)
+  }
+  return id
+ }
+
  async function submit(){
-  const activeLiff=liff
   if(!items.length||sending)return
-  if(!open){setMessage("ปิดรับรายการแล้ว");return}
-  if(!profile||!activeLiff){setMessage("ยังเชื่อม LINE ไม่สำเร็จ กรุณาเปิดผ่าน LINE OA แล้วลองอีกครั้ง");return}
   setSending(true)
-  setMessage("")
+  setMessage("กำลังบันทึก...")
+  const activeLiff=liff
+  const memberName=profile?.displayName||"สมาชิก"
+  const memberUserId=profile?.userId||fallbackUserId()
   const code=`SL-${Date.now().toString(36).toUpperCase()}`
+
   const {data,error}=await createClient().rpc("submit_lekhub_submission",{
    p_reference_code:code,
-   p_line_user_id:profile.userId,
-   p_member_name:profile.displayName,
-   p_member_avatar:profile.pictureUrl||null,
+   p_line_user_id:memberUserId,
+   p_member_name:memberName,
+   p_member_avatar:profile?.pictureUrl||null,
    p_items:items
   })
+
   if(error||!data?.success){
-   setMessage(error?.message||"ส่งไม่สำเร็จ กรุณาลองใหม่")
+   setMessage(error?.message||"บันทึกไม่สำเร็จ กรุณาลองใหม่")
    setSending(false)
    return
   }
 
-  try{
-   await activeLiff.sendMessages([{
+  if(activeLiff&&profile){
+   try{
+    await activeLiff.sendMessages([{
     type:"flex",
     altText:`รายการใหม่ ${code} รวม ${total}`,
     contents:{
@@ -105,8 +118,9 @@ export default function PlayPage(){
       action:{type:"uri",label:"ส่งเข้าหลังบ้าน",uri:"https://lek-hub.vercel.app/admin/reports"}
      }]}
     }
-   }])
-  }catch{}
+    }])
+   }catch{}
+  }
 
   setItems([])
   setValue("")
@@ -165,6 +179,7 @@ export default function PlayPage(){
      </div>)}
     </div>
     <div className="review-sum"><span>{items.length} รายการ</span><b>รวม {total.toLocaleString()}</b></div>
+    {message&&<p className="play-message">{message}</p>}
     <button type="button" className="red-action" disabled={sending} onClick={submit}>
      {sending?"กำลังส่ง...":"บันทึกส่ง"}
     </button>
