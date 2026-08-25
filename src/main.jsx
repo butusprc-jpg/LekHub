@@ -197,9 +197,12 @@ function Member({session,profile,lineProfile,reload,setPage,lang}){
  const[items,setItems]=useState(()=>{
   try{return JSON.parse(localStorage.getItem('lekhub_select_items')||'[]')}catch(e){return []}
  });
- const[review,setReview]=useState(false),[notice,setNotice]=useState('');
+ const[stage,setStage]=useState('edit');
+ const[notice,setNotice]=useState('');
+ const[lastSaved,setLastSaved]=useState(null);
  const categoryLabel={'3topmix':'3 บน + สลับ','3top':'3 บน','2top':'2 บน','single':'เดี่ยวบน','mix':'สลับ','bottom':'ข้างล่าง'};
  useEffect(()=>{localStorage.setItem('lekhub_select_items',JSON.stringify(items))},[items]);
+
  function addItem(e){
   e?.preventDefault();
   const clean=String(value||'').replace(/\D/g,'').slice(0,6);
@@ -207,10 +210,76 @@ function Member({session,profile,lineProfile,reload,setPage,lang}){
   if(!clean){setNotice(T(lang,'กรอกรายการก่อน','Enter an item first','请先输入项目'));return}
   if(!Number.isFinite(amount)||amount<=0){setNotice(T(lang,'กรอกยอดหัวใจก่อน','Enter heart amount','请输入爱心数量'));return}
   setItems(x=>[...x,{id:Date.now()+Math.random(),value:clean,category,heart:amount}]);
-  setValue('');setHeart('');setNotice('');setReview(false)
+  setValue('');setHeart('');setNotice('');setStage('edit')
  }
- function removeItem(id){setItems(x=>x.filter(i=>i.id!==id));setReview(false)}
+ function removeItem(id){setItems(x=>x.filter(i=>i.id!==id));setStage('edit')}
  const total=items.reduce((s,i)=>s+Number(i.heart||0),0);
+
+ function makeCode(){
+  const d=new Date();
+  const y=String(d.getFullYear()).slice(-2),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+  const tail=String(Date.now()).slice(-5);
+  return `LH-${y}${m}${day}-${tail}`;
+ }
+ function saveAndSend(){
+  if(!items.length)return;
+  const payload={
+   id:makeCode(),
+   line_user_id:lineProfile?.userId||profile?.line_user_id||'',
+   member_name:memberName,
+   member_avatar:avatar,
+   created_at:new Date().toISOString(),
+   status:'รอตรวจสอบ',
+   total,
+   item_count:items.length,
+   items:items.map(i=>({value:i.value,category:i.category,category_label:categoryLabel[i.category]||i.category,heart:Number(i.heart||0)}))
+  };
+  let history=[];
+  try{history=JSON.parse(localStorage.getItem('lekhub_submissions')||'[]')}catch(e){}
+  history=[payload,...history].slice(0,100);
+  localStorage.setItem('lekhub_submissions',JSON.stringify(history));
+  localStorage.removeItem('lekhub_select_items');
+  setItems([]);
+  setLastSaved(payload);
+  setStage('done');
+  setNotice('');
+ }
+
+ if(stage==='summary')return <section className="selectShell summaryScreen">
+  <header className="selectTopbar summaryTopbar">
+   <button type="button" className="selectClose summaryBack" onClick={()=>setStage('edit')}>‹</button>
+   <h1>{T(lang,'สรุปรายการ','Summary','汇总')}</h1>
+   <span className="selectCloseTime">{items.length} {T(lang,'รายการ','items','项')}</span>
+  </header>
+  <section className="summaryMemberCard">
+   <img src={avatar} alt="Member"/>
+   <div><small>{T(lang,'สมาชิก','Member','会员')}</small><b>{memberName}</b></div>
+   <span className="summaryStatus">{T(lang,'รอตรวจสอบ','Pending review','待审核')}</span>
+  </section>
+  <section className="summaryTicket">
+   <div className="summaryTicketHead"><div><small>{T(lang,'รายการใหม่','New submission','新项目')}</small><h2>{T(lang,'ตรวจสอบก่อนบันทึกส่ง','Review before save & send','保存发送前检查')}</h2></div><span>{new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</span></div>
+   <div className="summaryRows">{items.map((i,idx)=><div className="summaryRow" key={i.id}><span className="summaryIndex">{idx+1}</span><strong>{i.value}</strong><div><b>{categoryLabel[i.category]||i.category}</b><small>{T(lang,'ยอดหัวใจ','Heart','爱心')} {Number(i.heart).toLocaleString()}</small></div></div>)}</div>
+   <div className="summaryTotal"><span>{items.length} {T(lang,'รายการ','items','项')}</span><strong>{T(lang,'รวม','Total','合计')} {total.toLocaleString()}</strong></div>
+  </section>
+  <section className="summaryActions">
+   <button type="button" className="summaryEditBtn" onClick={()=>setStage('edit')}>{T(lang,'กลับไปแก้ไข','Edit','返回修改')}</button>
+   <button type="button" className="summarySendBtn" onClick={saveAndSend}>{T(lang,'บันทึกส่ง','Save & send','保存并发送')}</button>
+  </section>
+  <p className="summaryHint">{T(lang,'เมื่อกดบันทึกส่ง ระบบจะเก็บรายการชุดนี้และเตรียมส่งเข้าหลังบ้าน','Save & send stores this submission and prepares it for back office','保存并发送后将保存本次项目并准备发送到后台')}</p>
+ </section>;
+
+ if(stage==='done'&&lastSaved)return <section className="selectShell doneScreen">
+  <div className="doneCard">
+   <div className="doneIcon">✓</div>
+   <small>{T(lang,'บันทึกเรียบร้อย','Saved','已保存')}</small>
+   <h1>{T(lang,'บันทึกส่งแล้ว','Saved & sent','已保存并发送')}</h1>
+   <p>{T(lang,'รหัสรายการ','Reference','编号')} <b>{lastSaved.id}</b></p>
+   <div className="doneMeta"><span>{lastSaved.item_count} {T(lang,'รายการ','items','项')}</span><strong>{T(lang,'รวม','Total','合计')} {Number(lastSaved.total).toLocaleString()}</strong></div>
+   <span className="donePending">{T(lang,'สถานะ: รอตรวจสอบ','Status: Pending review','状态：待审核')}</span>
+   <button type="button" className="summarySendBtn" onClick={()=>{setLastSaved(null);setStage('edit')}}>{T(lang,'เลือกต่อ','Continue','继续')}</button>
+  </div>
+ </section>;
+
  return <section className="selectShell">
   <header className="selectTopbar">
    <button type="button" className="selectClose" onClick={()=>setPage('home')}>×</button>
@@ -231,7 +300,7 @@ function Member({session,profile,lineProfile,reload,setPage,lang}){
   </section>
   <section className="selectSummaryCard">
    <div className="selectSummaryLine"><b>{items.length} {T(lang,'รายการ','items','项')}</b><strong>{T(lang,'รวม','Total','合计')} {total.toLocaleString()}</strong></div>
-   {!review?<button type="button" className="selectReviewBtn" disabled={!items.length} onClick={()=>setReview(true)}>{T(lang,'ทบทวนและส่งข้อมูล','Review & send','查看并发送')}</button>:<div className="selectReviewBox"><b>{T(lang,'ตรวจสอบรายการก่อนส่ง','Review before sending','发送前检查')}</b>{items.map(i=><div key={i.id}><span>{i.value} • {categoryLabel[i.category]}</span><strong>{i.heart}</strong></div>)}<button type="button" className="selectReviewBtn" onClick={()=>{setNotice(T(lang,'ข้อมูลพร้อมส่งเข้าหลังบ้าน','Data is ready for back office','数据已准备发送至后台'));setReview(false)}}>{T(lang,'ยืนยันส่งข้อมูล','Confirm send','确认发送')}</button></div>}
+   <button type="button" className="selectReviewBtn" disabled={!items.length} onClick={()=>setStage('summary')}>{T(lang,'สรุปรายการก่อนบันทึกส่ง','Review before save & send','保存发送前汇总')}</button>
   </section>
  </section>
 }
