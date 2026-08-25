@@ -15,8 +15,8 @@ const localText=(obj,base,lang)=>{
  return lang==='en'?(en||th):lang==='zh'?(zh||th):th;
 };
 const SAMPLE_I18N={
- 'ยินดีต้อนรับสู่LekHub':{en:'Welcome to LekHub',zh:'欢迎来到 LekHub'},
- 'กิจกรรมสนุกสำหรับเด็กและครอบครัว':{en:'Fun activities for kids and families',zh:'适合儿童和家庭的有趣活动'},
+ 'ยินดีต้อนรับสู่ LekHub':{en:'Welcome to LekHub',zh:'欢迎来到 LekHub'},
+ 'ระบบใช้งานผ่าน LINE OA สำหรับสมาชิก แอดมิน และหลังบ้าน':{en:'A LINE OA workflow for members, admin, and back office',zh:'适用于会员、管理员与后台的 LINE OA 系统'},
  'สนุกกับกิจกรรมสำหรับเด็ก สะสมแต้ม และเกมล่าตัวอักษรใน LINE OA ของร้าน':{en:'Enjoy kids activities, collect points, and play the letter hunt game in our LINE OA.',zh:'参与儿童活动、累积积分，并在店铺 LINE OA 中体验字母寻宝游戏。'},
  'ส่วนลด 50 บาท':{en:'50 THB Discount',zh:'50 泰铢优惠'},
  'ส่วนลด 100 บาท':{en:'100 THB Discount',zh:'100 泰铢优惠'},
@@ -145,23 +145,42 @@ function App(){
  {page==='home'?<Home setPage={goPage} news={news} profile={profile} lang={lang} initialGrab={initialGrabOpen()}/>:page==='booking'?<Booking profile={profile} session={session} lang={lang}/>:page==='event'?<Event profile={profile} lang={lang}/>:page==='member'?<Member session={session} profile={profile} lineProfile={lineProfile} reload={()=>loadProfile()} setPage={goPage} lang={lang}/>:page==='game'?<Game session={session} lang={lang}/>:page==='rewards'?<Rewards session={session} profile={profile} reload={()=>loadProfile()} lang={lang}/>:page==='admin'?<Admin session={session} profile={profile} forceAdmin={adminDevice} onExitAdmin={exitAdminMode}/>:<Coming title={menus.find(x=>x[2]===page)?.[0]}/>}{adminGateOpen&&<div className="adminPassOverlay" role="dialog" aria-modal="true" aria-label="ใส่รหัสหลังบ้าน"><form className="adminPassModal" onSubmit={unlockAdmin}><button type="button" className="adminPassClose" onClick={()=>{if(!adminGateBusy)setAdminGateOpen(false)}}>×</button><div className="adminPassIcon"><ShieldCheck/></div><h3>เข้าสู่หลังบ้าน</h3><p>ใส่รหัสผ่านแอดมิน</p><input autoFocus type="password" value={adminPassword} onChange={e=>setAdminPassword(e.target.value)} placeholder="รหัสผ่าน" autoComplete="current-password"/><button className="primary" disabled={adminGateBusy}>{adminGateBusy?'กำลังตรวจ...':'เข้าหลังบ้าน'}</button>{adminGateMsg&&<div className="adminPassMsg">{adminGateMsg}</div>}<small>ใส่ถูกครั้งเดียว เครื่องนี้จะจำว่าเป็นแอดมิน</small></form></div>}</main>
 }
 function Home({setPage,news,profile,lang,initialGrab=false}){
- const isStaff=['staff','admin','owner','super_admin'].includes(profile?.role),menus=customerMenus(lang),[grabOpen,setGrabOpen]=useState(initialGrab),[rideFrom,setRideFrom]=useState('home'),[homeAddress,setHomeAddress]=useState(()=>localStorage.getItem('LekHub_LekHub_home_address')||''),[grabMsg,setGrabMsg]=useState('');
- function saveHomeAddress(v){setHomeAddress(v);localStorage.setItem('LekHub_LekHub_home_address',v)}
- async function callGrab(){
-  const shop=T(lang,'LekHub คาเฟ่ แอนด์ คิดส์ สเปซ','LekHub & Kids Space','LekHub & Kids Space');
-  const destination=rideFrom==='home'?shop:homeAddress.trim();
-  if(rideFrom==='shop'&&!destination){setGrabMsg(T(lang,'กรุณาใส่ที่อยู่บ้านก่อน','Enter your home address first','请先填写家庭地址'));return}
-  try{await navigator.clipboard?.writeText(destination)}catch(e){}
-  setGrabMsg(T(lang,`คัดลอกปลายทางแล้ว: ${destination}`,`Destination copied: ${destination}`,`已复制目的地：${destination}`));
-  window.open('https://www.grab.com/th/transport/','_blank','noopener')
- }
- return <><section className="hero"><img className="storeLogo homeStoreLogo" src="/LekHub-logo.png" alt="LekHub & Kids Space"/><span className="bubble">{profile?`⭐ ${profile.points_balance||0} ${T(lang,'แต้ม','points','积分')}`:T(lang,'สนุก • อร่อย • ได้แต้ม','Fun • Delicious • Earn points','好玩 • 美味 • 赚积分')}</span></section>
- <section className="news"><Newspaper/><div><b>{news[0]?translatedValue(localText(news[0],'title',lang),lang):T(lang,'ยินดีต้อนรับสู่LekHub','Welcome to LekHub','欢迎来到 LekHub')}</b><p>{news[0]?translatedValue(localText(news[0],'body',lang),lang):T(lang,'กิจกรรมสนุกสำหรับเด็กและครอบครัว','Fun activities for kids and families','适合儿童和家庭的有趣活动')}</p></div></section>
- <div className="homeMenuHead"><h2>{T(lang,'เมนูหลัก','Main Menu','主菜单')}</h2><small>{T(lang,'เลือกสิ่งที่ต้องการได้เลย','Choose what you need','请选择功能')}</small></div>
- <section className="homeIconGrid">{menus.map(([t,I,p,emoji])=><button className={'homeIconCard '+(p==='grab'?'grabTile':'')} key={p} onClick={()=>p==='grab'?setGrabOpen(true):setPage(p)}><span className="homeIconBubble">{I?<I/>:<span className="emojiIcon">{emoji}</span>}</span><b>{t}</b></button>)}</section>
- <section className="quest"><div>🗺️</div><div><b>{T(lang,'ล่าคำตามลายแทงสมบัติ','Treasure Word Hunt','寻宝拼字游戏')}</b><p>{T(lang,'ตามคำใบ้ หา QR เก็บตัวอักษร แล้วเรียงคำให้ถูกต้อง','Follow clues, find QR codes and solve the word','根据提示寻找 QR，收集字母并拼出正确答案')}</p></div><button onClick={()=>setPage('game')}>{T(lang,'เริ่มเล่น','Play','开始游戏')}</button></section>
- <button className="adminEntry" onClick={()=>setPage('admin')}><ShieldCheck/><span><b>{T(lang,'หลังบ้านร้าน','Admin','后台管理')}</b><small>{isStaff?T(lang,'จัดการร้าน','Manage store','管理店铺'):T(lang,'เข้าสู่หน้าหลังบ้าน','Open admin','进入后台')}</small></span></button>
- {grabOpen&&<div className="homeGrabModal"><div className="homeGrabSheet"><button className="closeGrab" onClick={()=>setGrabOpen(false)}>×</button><div className="grabSheetHead"><div className="grabBigIcon">🚕</div><div><h3>{T(lang,'เรียก Grab','Call Grab','叫 Grab')}</h3><p>{T(lang,'เลือกต้นทาง แล้วระบบเตรียมปลายทางให้','Choose where you are now','选择你现在的位置')}</p></div></div><div className="grabMode"><button className={rideFrom==='home'?'active':''} onClick={()=>setRideFrom('home')}>🏠 {T(lang,'อยู่บ้าน → ไปร้าน','Home → Cafe','家 → 店')}</button><button className={rideFrom==='shop'?'active':''} onClick={()=>setRideFrom('shop')}>🌱 {T(lang,'อยู่ร้าน → กลับบ้าน','Cafe → Home','店 → 家')}</button></div><label className="grabHomeField"><span>{T(lang,'ที่อยู่บ้าน','Home address','家庭地址')}</span><textarea rows="2" value={homeAddress} onChange={e=>saveHomeAddress(e.target.value)} placeholder={T(lang,'บันทึกที่อยู่บ้านไว้ครั้งเดียว','Save your home address once','保存家庭地址')}/></label><div className="grabDestination"><small>{T(lang,'ปลายทาง','Destination','目的地')}</small><b>{rideFrom==='home'?T(lang,'LekHub คาเฟ่ แอนด์ คิดส์ สเปซ','LekHub & Kids Space','LekHub & Kids Space'):(homeAddress||T(lang,'กรุณาใส่ที่อยู่บ้าน','Enter home address','请输入家庭地址'))}</b></div><button className="grabCallBtn" onClick={callGrab}>🚕 {T(lang,'เปิด Grab','Open Grab','打开 Grab')}</button>{grabMsg&&<p className="grabModalMsg">{grabMsg}</p>}</div></div>}
+ const quickMenus=[
+  [T(lang,'หน้าเลือก','Selection','选择页面'),Star,'member','⭐'],
+  [T(lang,'ฟอร์มใช้งาน','Form','表单'),CalendarDays,'booking','📝'],
+  [T(lang,'ข้อมูลเพิ่มเติม','More details','更多信息'),PartyPopper,'event','📋'],
+  [T(lang,'ตัวอย่างหน้าจอ','Preview','界面预览'),Gamepad2,'game','📱'],
+  [T(lang,'สิทธิ์และคะแนน','Points & access','积分与权限'),Gift,'rewards','🎁'],
+  [T(lang,'หลังบ้าน','Back office','后台管理'),ShieldCheck,'admin','⚙️']
+ ];
+ const welcomeTitle=news[0]?translatedValue(localText(news[0],'title',lang),lang):T(lang,'ยินดีต้อนรับสู่ LekHub','Welcome to LekHub','欢迎来到 LekHub');
+ const welcomeBody=news[0]?translatedValue(localText(news[0],'body',lang),lang):T(lang,'ระบบใช้งานผ่าน LINE OA สำหรับสมาชิก แอดมิน และหลังบ้าน','A LINE OA workflow for members, admin, and back office','适用于会员、管理员与后台的 LINE OA 系统');
+ return <>
+  <section className="hero lekhubHero">
+   <img className="storeLogo homeStoreLogo" src="/LekHub-logo.png" alt="LekHub"/>
+   <div className="heroMeta">
+    <h1>LekHub</h1>
+    <p>{T(lang,'ระบบสมาชิก • แบบฟอร์ม • ส่งข้อมูล • หลังบ้าน','Member • Forms • Data send • Back office','会员 • 表单 • 发送数据 • 后台')}</p>
+   </div>
+   <span className="bubble">{profile?`⭐ ${profile.points_balance||0} ${T(lang,'คะแนน','points','积分')}`:T(lang,'พร้อมใช้งาน','Ready to use','可立即使用')}</span>
+  </section>
+  <section className="news homeNotice"><Newspaper/><div><b>{welcomeTitle}</b><p>{welcomeBody}</p></div></section>
+  <section className="softInfoGrid">
+   <article className="softInfoCard"><b>{T(lang,'ลิงก์หลัก 4 ส่วน','4 main links','4 个主要链接')}</b><small>{T(lang,'หน้าเลือก • กฎกติกา • รายงาน • หลังบ้าน','Selection • Rules • Report • Back office','选择页 • 规则 • 报告 • 后台')}</small></article>
+   <article className="softInfoCard"><b>{T(lang,'การเชื่อมต่อ','Connection','连接')}</b><small>{T(lang,'ใช้งานผ่าน LINE OA และ LIFF เหมือนเดิม','Still connected through LINE OA and LIFF','仍通过 LINE OA 与 LIFF 连接')}</small></article>
+  </section>
+  <div className="homeMenuHead"><h2>{T(lang,'เมนู LekHub','LekHub Menu','LekHub 菜单')}</h2><small>{T(lang,'เลือกส่วนที่ต้องการใช้งาน','Choose the section you want','选择要使用的部分')}</small></div>
+  <section className="homeIconGrid">{quickMenus.map(([t,I,p,emoji])=><button className="homeIconCard lekhubMenuCard" key={p} onClick={()=>setPage(p)}><span className="homeIconBubble">{I?<I/>:<span className="emojiIcon">{emoji}</span>}</span><b>{t}</b></button>)}</section>
+  <section className="lekhubQuickPanel">
+   <div className="quickPanelCopy">
+    <b>{T(lang,'เริ่มใช้งานได้จากเมนูด้านบน','Start from the menu above','从上方菜单开始使用')}</b>
+    <p>{T(lang,'หน้านี้แทนหน้าเดิมของคาเฟ่ และใช้เป็นหน้าเริ่มต้นของ LekHub','This page replaces the previous cafe home and acts as the LekHub start page','此页面已替换原来的咖啡馆首页，并作为 LekHub 的起始页面')}</p>
+   </div>
+   <div className="quickPanelActions">
+    <button onClick={()=>setPage('member')}>{T(lang,'เปิดหน้าเลือก','Open selection page','打开选择页面')}</button>
+    <button className="secondaryBtn" onClick={()=>setPage('admin')}>{T(lang,'เปิดหลังบ้าน','Open back office','打开后台')}</button>
+   </div>
+  </section>
  </>}
 
 function Field({icon:Icon,label,...p}){return <label><span>{Icon&&<Icon/>}{label}</span><input {...p}/></label>}
@@ -172,7 +191,7 @@ function Member({session,profile,lineProfile,reload,setPage,lang}){
  const[msg,setMsg]=useState(''),[points,setPoints]=useState([]),[autoLoading,setAutoLoading]=useState(!session);
  const isStaff=STAFF_ROLES.has(profile?.role);
  const memberName=lineProfile?.displayName||profile?.display_name||T(lang,'สมาชิก LINE','LINE Member','LINE 会员');
- const fallbackAvatar='/lekhub-avatar.jpg';
+ const fallbackAvatar='/member-child-avatar.jpg';
  useEffect(()=>{
   let active=true;
   async function ensureMember(){
@@ -197,9 +216,9 @@ function Member({session,profile,lineProfile,reload,setPage,lang}){
   ensureMember();return()=>{active=false}
  },[session]);
  useEffect(()=>{if(profile)sb.from('point_transactions').select('id,amount,type,description,created_at').order('created_at',{ascending:false}).limit(8).then(({data})=>setPoints(data||[]))},[profile]);
- if(autoLoading||!session)return <Panel title={T(lang,'⭐ สมาชิกLekHub','⭐ LekHub Member','⭐ LekHub 会员')} sub={T(lang,'กำลังเปิดข้อมูลสมาชิกจาก LINE...','Opening your LINE member card...','正在打开 LINE 会员卡...')}><div className="memberAutoLoading"><div className="memberAutoSpinner">⭐</div><b>{T(lang,'กำลังเปิดบัตรสมาชิก','Opening member card','正在打开会员卡')}</b><small>{T(lang,'ไม่ต้องกรอกชื่อหรือเบอร์โทร','No name or phone form required','无需填写姓名或电话')}</small>{msg&&<p className="msg">{msg}</p>}</div></Panel>;
- return <Panel title={T(lang,'⭐ บัตรสมาชิกLekHub','⭐ LekHub Member Card','⭐ LekHub 会员卡')} sub={T(lang,'ชื่อสมาชิกมาจาก LINE อัตโนมัติ','Your member name comes from LINE automatically','会员姓名自动来自 LINE')}>
-  <section className="memberCard memberIdCard"><img className="memberIdPhoto" src={fallbackAvatar} alt="Member"/><div className="memberIdentity"><small>{T(lang,'สมาชิกLekHub','LekHub Member','LekHub 会员')}</small><h3>{memberName}</h3><span>{T(lang,'สมาชิกผ่าน LINE OA','LINE OA Member','LINE OA 会员')}</span></div><strong>{profile?.points_balance||0}<small>{T(lang,'แต้ม','points','积分')}</small></strong></section>
+ if(autoLoading||!session)return <Panel title={T(lang,'⭐ สมาชิกบ้านต้นกล้า','⭐ LekHub Member','⭐ LekHub 会员')} sub={T(lang,'กำลังเปิดข้อมูลสมาชิกจาก LINE...','Opening your LINE member card...','正在打开 LINE 会员卡...')}><div className="memberAutoLoading"><div className="memberAutoSpinner">⭐</div><b>{T(lang,'กำลังเปิดบัตรสมาชิก','Opening member card','正在打开会员卡')}</b><small>{T(lang,'ไม่ต้องกรอกชื่อหรือเบอร์โทร','No name or phone form required','无需填写姓名或电话')}</small>{msg&&<p className="msg">{msg}</p>}</div></Panel>;
+ return <Panel title={T(lang,'⭐ บัตรสมาชิกบ้านต้นกล้า','⭐ LekHub Member Card','⭐ LekHub 会员卡')} sub={T(lang,'ชื่อสมาชิกมาจาก LINE อัตโนมัติ','Your member name comes from LINE automatically','会员姓名自动来自 LINE')}>
+  <section className="memberCard memberIdCard"><img className="memberIdPhoto" src={fallbackAvatar} alt="Member"/><div className="memberIdentity"><small>{T(lang,'สมาชิกบ้านต้นกล้า','LekHub Member','LekHub 会员')}</small><h3>{memberName}</h3><span>{T(lang,'สมาชิกผ่าน LINE OA','LINE OA Member','LINE OA 会员')}</span></div><strong>{profile?.points_balance||0}<small>{T(lang,'แต้ม','points','积分')}</small></strong></section>
   <section className="memberReceipt"><div className="memberSectionHead"><ScanLine/><div><b>{T(lang,'สแกนบิล รับแต้ม','Scan receipt for points','扫描小票赚积分')}</b><small>{T(lang,'ถ่ายรูปใบเสร็จแล้วรับแต้มตามยอดเงิน','Scan a receipt and earn points automatically','扫描小票并按消费金额自动获得积分')}</small></div></div><Receipt session={session} profile={profile} reload={reload} embedded={true} lang={lang}/></section>
   <section className="history"><h3><Star/> {T(lang,'ประวัติแต้มล่าสุด','Recent points','最近积分记录')}</h3>{points.length?points.map(x=><div className="pointItem" key={x.id}><div><b>{x.description||x.type}</b><small>{new Date(x.created_at).toLocaleDateString(lang==='zh'?'zh-CN':lang==='en'?'en-GB':'th-TH')}</small></div><strong className={x.amount>=0?'plus':'minus'}>{x.amount>=0?'+':''}{x.amount}</strong></div>):<p className="empty">{T(lang,'ยังไม่มีรายการแต้ม','No point activity yet','暂无积分记录')}</p>}</section>
   <button type="button" className="adminMemberBtn memberAdminBottom" onClick={()=>setPage('admin')}><ShieldCheck/><span><b>{T(lang,'หลังบ้านร้าน','Admin','后台管理')}</b><small>{T(lang,'ใส่รหัสเพื่อเข้าหลังบ้าน','Enter admin password','输入后台密码')}</small></span></button>
@@ -494,7 +513,7 @@ function Admin({session,profile,forceAdmin=false,onExitAdmin}){
  
  async function ensureGameCampaign(){
   if(gameCampaign)return gameCampaign;
-  const{data,error}=await sb.from('game_campaigns').insert({restaurant_id:RESTAURANT_ID,name:'ล่าตัวอักษรLekHub',description:'ตามหาตัวอักษรในร้าน แล้วนำมาต่อเป็นคำ',active:true,points_per_word:20}).select().single();
+  const{data,error}=await sb.from('game_campaigns').insert({restaurant_id:RESTAURANT_ID,name:'ล่าตัวอักษรบ้านต้นกล้า',description:'ตามหาตัวอักษรในร้าน แล้วนำมาต่อเป็นคำ',active:true,points_per_word:20}).select().single();
   if(error){setMsg(friendly(error.message));return null}setGameCampaign(data);return data
  }
 
@@ -586,10 +605,10 @@ function Admin({session,profile,forceAdmin=false,onExitAdmin}){
  async function toggleGameSpot(id,active){const{error}=await sb.from('game_spots').update({active:!active}).eq('id',id);if(error){setMsg(friendly(error.message));return}setGameSpots(x=>x.map(r=>r.id===id?{...r,active:!active}:r))}
  async function toggleCampaign(){if(!gameCampaign)return;const{error}=await sb.from('game_campaigns').update({active:!gameCampaign.active}).eq('id',gameCampaign.id);if(error){setMsg(friendly(error.message));return}setGameCampaign({...gameCampaign,active:!gameCampaign.active})}
 
- if(session&&!profile)return <Panel title="🛠️ หลังบ้านLekHub" sub="กำลังตรวจสอบสิทธิ์..."><div className="memberAutoLoading"><div className="memberAutoSpinner">🛠️</div><b>กำลังเปิดหลังบ้าน</b></div></Panel>;
+ if(session&&!profile)return <Panel title="🛠️ หลังบ้านบ้านต้นกล้า" sub="กำลังตรวจสอบสิทธิ์..."><div className="memberAutoLoading"><div className="memberAutoSpinner">🛠️</div><b>กำลังเปิดหลังบ้าน</b></div></Panel>;
  if(!session||!allowed)return <Panel title="🔐 หลังบ้านร้าน" sub="สำหรับเจ้าของร้านและพนักงานที่ได้รับสิทธิ์เท่านั้น"><div className="adminDenied"><ShieldCheck/><h3>บัญชีนี้ยังไม่มีสิทธิ์หลังบ้าน</h3><p>ข้อมูลลูกค้าและรายการจองถูกป้องกันด้วยสิทธิ์ร้าน</p></div></Panel>;
  const today=new Date().toISOString().slice(0,10);
- return <Panel title="🛠️ หลังบ้านLekHub" sub={`${profile?.display_name||profile?.role} • ${profile?.role}`}><section className="adminWrap">
+ return <Panel title="🛠️ หลังบ้านบ้านต้นกล้า" sub={`${profile?.display_name||profile?.role} • ${profile?.role}`}><section className="adminWrap">
   <div className="adminTop">{msg&&<span className="adminMsg">{msg}</span>}<button type="button" className="exitAdminModeBtn" onClick={onExitAdmin}>ออกจากโหมดแอดมิน</button></div>
   
   <div className="adminTopTabs" role="tablist" aria-label="เมนูหลังบ้าน">
@@ -712,7 +731,7 @@ function Admin({session,profile,forceAdmin=false,onExitAdmin}){
 }
 
 function Coming({title}){return <Panel title={title||'กำลังพัฒนา'} sub="ระบบหลักกำลังเชื่อมต่อ"><div className="bigemoji">✨</div><p>ส่วนนี้จะทำต่อหลังจองโต๊ะและสมาชิกใช้งานเรียบร้อย</p></Panel>}
-function Panel({title,sub,children}){return <section className="panel"><header><img className="storeLogo panelStoreLogo" src="/LekHub-logo.png" alt="LekHub Cafe & Kids Space"/><div className="panelTitle"><h1>{title}</h1><p>{sub}</p></div></header>{children}</section>}
+function Panel({title,sub,children}){return <section className="panel"><header><img className="storeLogo panelStoreLogo" src="/LekHub-logo.png" alt="LekHub"/><div className="panelTitle"><h1>{title}</h1><p>{sub}</p></div></header>{children}</section>}
 function friendly(m='',lang='th'){if(m.includes('Anonymous sign-ins are disabled'))return T(lang,'ต้องเปิด Anonymous Sign-Ins ใน Supabase ก่อน','Membership sign-in is temporarily unavailable','会员登录暂时不可用');if(m.includes('invalid_date'))return T(lang,'กรุณาเลือกวันที่วันนี้หรือวันถัดไป','Please choose today or a future date','请选择今天或之后的日期');if(m.includes('invalid_party_size'))return T(lang,'จำนวนคนไม่ถูกต้อง','Invalid number of guests','人数不正确');return m}
 function dateTH(d){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'})}
 function dateL(d,lang='th'){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString(lang==='zh'?'zh-CN':lang==='en'?'en-GB':'th-TH',{day:'numeric',month:'short',year:'numeric'})}
