@@ -29,6 +29,7 @@ export default function AdminPage(){
    <nav>
     <Link className="active" href="/admin">ภาพรวม</Link>
     <Link href="/admin/reports">กล่องรับ</Link>
+    <Link href="/admin/members">สมาชิก</Link>
     <Link href="/admin/backoffice">รายงานหลังบ้าน</Link>
     <Link href="/admin/settings">ตั้งค่าระบบ</Link>
    </nav>

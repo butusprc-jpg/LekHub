@@ -22,7 +22,6 @@ export default function PlayPage(){
  const [reviewing,setReviewing]=useState(false),[cash,setCash]=useState(false)
  const [blockedValues,setBlockedValues]=useState<string[]>([])
  const [cashPercent,setCashPercent]=useState(0)
- const [categoryAmounts,setCategoryAmounts]=useState<Record<string,number>>({})
  const [closeTime,setCloseTime]=useState("")
  const [roundDate,setRoundDate]=useState("")
  const [previousRoundNumber,setPreviousRoundNumber]=useState("")
@@ -48,12 +47,6 @@ export default function PlayPage(){
     if("is_open" in data)setOpen(Boolean(data.is_open))
     if(Array.isArray(data.blocked_values))setBlockedValues(data.blocked_values.map(String))
     if(data.cash_percent!=null)setCashPercent(Number(data.cash_percent)||0)
-    if(data.category_amounts&&typeof data.category_amounts==="object"){
-     const next=Object.fromEntries(Object.entries(data.category_amounts).map(([k,v])=>[k,Number(v)||0]))
-     setCategoryAmounts(next)
-     const first=Number(next["3topmix"]||0)
-     if(first>0)setAmount(String(first))
-    }
     if(data.close_time)setCloseTime(String(data.close_time).slice(0,5))
     if(data.round_date)setRoundDate(String(data.round_date).slice(0,10))
     if(data.previous_round_number)setPreviousRoundNumber(String(data.previous_round_number).replace(/\D/g,"").slice(0,6))
@@ -291,7 +284,7 @@ export default function PlayPage(){
    <button type="button" aria-label="ปิดหน้าจอ" onClick={close}>×</button>
    <div style={{flex:1}}>
     <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:"12px"}}>
-     <h1 style={{margin:0}}>เลือกเลข</h1>
+     <span/>
      <strong style={{fontSize:"14px",whiteSpace:"nowrap"}}>{roundDate?`รอบวันที่ ${roundLabel(roundDate)}`:""}</strong>
     </div>
     {!!blockedValues.length&&<div style={{marginTop:"4px",textAlign:"left",maxWidth:"100%"}}>
@@ -317,10 +310,7 @@ export default function PlayPage(){
 
   <section className="pick-card">
    <label>ประเภท<select value={category} onChange={e=>{
-    const next=e.target.value
-    setCategory(next);setValue("");setMessage("")
-    const configured=Number(categoryAmounts[next]||0)
-    setAmount(configured>0?String(configured):"")
+    setCategory(e.target.value);setValue("");setMessage("")
    }}>
     {types.map(([k,n])=><option key={k} value={k}>{n}</option>)}
    </select></label>

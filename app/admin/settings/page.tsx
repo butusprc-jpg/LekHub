@@ -44,6 +44,8 @@ export default function SettingsPage(){
  const [cashPercent,setCashPercent]=useState("0")
  const [roundDateInput,setRoundDateInput]=useState("")
  const [previousRoundNumber,setPreviousRoundNumber]=useState("")
+ const [activityPrizeNumber,setActivityPrizeNumber]=useState("")
+ const [rewardSummary,setRewardSummary]=useState("")
  const [loading,setLoading]=useState(true)
  const [saving,setSaving]=useState(false)
  const [message,setMessage]=useState("กำลังตรวจสอบสิทธิ์ LINE...")
@@ -66,6 +68,7 @@ export default function SettingsPage(){
    setCashPercent(String(Number(data?.cash_percent||0)))
    setRoundDateInput(displayRoundInput(data?.round_date_override||""))
    setPreviousRoundNumber(String(data?.previous_round_number||"").replace(/\D/g,"").slice(0,6))
+   setActivityPrizeNumber(String(data?.activity_prize_number||"").replace(/\D/g,"").slice(0,6))
    setMessage(`เข้าระบบแล้ว: ${current.displayName}`)
   }catch(caught){
    setError(caught instanceof Error?caught.message:"เข้าตั้งค่าไม่สำเร็จ")
@@ -89,7 +92,11 @@ export default function SettingsPage(){
    setError("เลขรอบก่อนต้องมี 6 หลัก")
    return
   }
-  setSaving(true);setError("");setMessage("กำลังบันทึก...")
+  if(activityPrizeNumber&& !/^\d{6}$/.test(activityPrizeNumber)){
+   setError("เลขรางวัลกิจกรรมต้องมี 6 หลัก")
+   return
+  }
+  setSaving(true);setError("");setMessage("กำลังบันทึก...");setRewardSummary("")
   try{
    const categoryAmounts=Object.fromEntries(
     TYPE_LABELS.map(([key])=>[key,Math.max(0,Number(amounts[key]||0)||0)])
@@ -113,6 +120,20 @@ export default function SettingsPage(){
    const blockedResult=await adminRpc(session,"lekhub_line_admin_replace_blocked_values",{p_values:values})
    if(blockedResult.error)throw new Error(blockedResult.error.message)
 
+   if(activityPrizeNumber){
+    const result=await adminRpc(session,"lekhub_line_admin_set_activity_result",{p_prize_number:activityPrizeNumber})
+    if(result.error)throw new Error(result.error.message)
+    const info=result.data||{}
+    setRewardSummary(`พบ ${Number(info.winner_items||0)} รายการ • ยอดรางวัลรวม ${Number(info.reward_total||0).toLocaleString()}`)
+    if(Array.isArray(info.winners)&&info.winners.length){
+     fetch("/api/admin/reward-notify",{
+      method:"POST",
+      headers:{"content-type":"application/json"},
+      body:JSON.stringify({adminToken:session.token,roundDate:info.round_date,prizeNumber:info.prize_number,winners:info.winners}),
+     }).catch(()=>{})
+    }
+   }
+
    setMessage("บันทึกการตั้งค่าแล้ว")
   }catch(caught){
    setError(caught instanceof Error?caught.message:"บันทึกไม่สำเร็จ")
@@ -131,6 +152,7 @@ export default function SettingsPage(){
    <nav>
     <Link href="/admin">ภาพรวม</Link>
     <Link href="/admin/reports">กล่องรับ</Link>
+    <Link href="/admin/members">สมาชิก</Link>
     <Link href="/admin/backoffice">ตารางกิจกรรม</Link>
     <Link className="active" href="/admin/settings">ตั้งค่าระบบ</Link>
    </nav>
@@ -157,7 +179,7 @@ export default function SettingsPage(){
     </label>
 
     <div>
-     <b>ค่ายอดของประเภท</b>
+     <b>ค่ายอดประเภท (ตัวคูณรางวัล)</b>
      <div style={{display:"grid",gap:"10px",marginTop:"10px"}}>
       {TYPE_LABELS.map(([key,label])=><label key={key} style={{display:"grid",gridTemplateColumns:"1fr 140px",gap:"12px",alignItems:"center"}}>
        <span>{label}</span>
@@ -195,6 +217,20 @@ export default function SettingsPage(){
      />
      <small style={{display:"block"}}>จะแสดงด้านบนสุดของหน้าเล่น</small>
     </label>
+
+    <label>
+     <b>เลขรางวัลกิจกรรม 6 หลัก</b>
+     <input
+      inputMode="numeric"
+      pattern="[0-9]*"
+      maxLength={6}
+      value={activityPrizeNumber}
+      onChange={e=>setActivityPrizeNumber(e.target.value.replace(/\D/g,"").slice(0,6))}
+      placeholder="123456"
+     />
+     <small style={{display:"block"}}>ระบบจะเทียบกับรายการในรอบนี้ แล้วคำนวณ ยอดที่เลือก × ค่ายอดประเภท</small>
+    </label>
+    {rewardSummary&&<div className="admin-success">{rewardSummary}</div>}
 
     <label>
      <b>รอบวันที่</b>
