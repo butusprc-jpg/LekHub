@@ -23,6 +23,8 @@ export default function ReportsPage() {
   const [loading,setLoading]=useState(true)
   const [error,setError]=useState("")
   const [working,setWorking]=useState("")
+  const [filter,setFilter]=useState<"all"|"pending"|"reviewed">("all")
+  const [focusId,setFocusId]=useState("")
 
   async function load() {
     setLoading(true); setError("")
@@ -41,7 +43,13 @@ export default function ReportsPage() {
     }
   }
 
-  useEffect(()=>{load()},[])
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search)
+    const status=params.get("status")
+    if(status==="pending"||status==="reviewed")setFilter(status)
+    setFocusId(params.get("focus")||"")
+    load()
+  },[])
 
   async function setStatus(id:string,status:"pending"|"reviewed"|"cancelled") {
     if(!session||working)return
@@ -86,7 +94,7 @@ export default function ReportsPage() {
       <div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>OA BACKOFFICE</small></div></div>
       <nav>
         <Link href="/admin">ภาพรวม</Link>
-        <Link className="active" href="/admin/reports">กล่องรับจาก OA</Link>
+        <Link className="active" href="/admin/reports">กล่องรับ</Link>
         <Link href="/admin/backoffice">รายงานหลังบ้าน</Link>
         <Link href="/admin/settings">ตั้งค่าระบบ</Link>
       </nav>
@@ -94,7 +102,7 @@ export default function ReportsPage() {
 
     <section className="admin-content">
       <header className="admin-topbar">
-        <div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>กล่องรับจาก OA</h1></div>
+        <div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>กล่องรับ</h1></div>
         <Link href="/admin/backoffice">ดูรายงานหลังบ้าน →</Link>
       </header>
 
@@ -102,7 +110,14 @@ export default function ReportsPage() {
       {error&&<div className="admin-error">{error}<br/><button type="button" onClick={load}>ลองใหม่</button></div>}
 
       <div className="submission-grid">
-        {rows.map(row=><article className="submission-card" key={row.id}>
+        {rows
+          .filter(row=>filter==="all"||row.status===filter)
+          .map(row=><article
+            className="submission-card"
+            key={row.id}
+            id={`submission-${row.id}`}
+            style={focusId===row.id?{outline:"3px solid #C40000",outlineOffset:"2px"}:undefined}
+          >
           <div className="submission-head">
             <div><h2>{row.member_name}</h2><small>{row.reference_code}</small></div>
             <b>{row.status}</b>

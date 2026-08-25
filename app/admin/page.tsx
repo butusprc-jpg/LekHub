@@ -28,7 +28,7 @@ export default function AdminPage(){
    <div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>OA BACKOFFICE</small></div></div>
    <nav>
     <Link className="active" href="/admin">ภาพรวม</Link>
-    <Link href="/admin/reports">กล่องรับจาก OA</Link>
+    <Link href="/admin/reports">กล่องรับ</Link>
     <Link href="/admin/backoffice">รายงานหลังบ้าน</Link>
     <Link href="/admin/settings">ตั้งค่าระบบ</Link>
    </nav>
@@ -37,10 +37,18 @@ export default function AdminPage(){
    <header className="admin-topbar"><div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>ภาพรวมหลังบ้าน</h1></div></header>
    {error&&<div className="admin-error">{error}</div>}
    <div className="stat-grid">
-    <article><small>เข้า OA ทั้งหมด</small><b>{rows.length}</b></article>
-    <article><small>รอตรวจ</small><b>{pending}</b></article>
-    <article><small>ตรวจแล้ว</small><b>{reviewed}</b></article>
-    <article><small>นำเข้าแล้ว</small><b>{imported}</b></article>
+    <Link href="/admin/reports" style={{textDecoration:"none",color:"inherit"}}>
+     <article><small>งานเข้า</small><b>{rows.length}</b></article>
+    </Link>
+    <Link href="/admin/reports?status=pending" style={{textDecoration:"none",color:"inherit"}}>
+     <article><small>รอตรวจ</small><b>{pending}</b></article>
+    </Link>
+    <Link href="/admin/reports?status=reviewed" style={{textDecoration:"none",color:"inherit"}}>
+     <article><small>ตรวจแล้ว</small><b>{reviewed}</b></article>
+    </Link>
+    <Link href="/admin/backoffice" style={{textDecoration:"none",color:"inherit"}}>
+     <article><small>นำเข้าแล้ว</small><b>{imported}</b></article>
+    </Link>
    </div>
   </section>
  </main>

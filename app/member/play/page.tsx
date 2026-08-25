@@ -186,7 +186,7 @@ export default function PlayPage(){
      ]},
      footer:{type:"box",layout:"vertical",contents:[{
       type:"button",style:"primary",color:"#C40000",
-      action:{type:"uri",label:"เปิดตรวจสอบรายการ",uri:`https://liff.line.me/${(process.env.NEXT_PUBLIC_LINE_LIFF_ID||"2011199813-swdN7h10").trim()}?admin=reports&focus=${data.id}`}
+      action:{type:"uri",label:"เปิดตรวจสอบรายการ",uri:`https://lek-hub.vercel.app/admin/reports?focus=${data.id}`}
      }]}
     }
     }])

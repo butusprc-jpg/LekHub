@@ -114,7 +114,7 @@ export default function BackofficePage(){
    <div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>OA BACKOFFICE</small></div></div>
    <nav>
     <Link href="/admin">ภาพรวม</Link>
-    <Link href="/admin/reports">กล่องรับจาก OA</Link>
+    <Link href="/admin/reports">กล่องรับ</Link>
     <Link className="active" href="/admin/backoffice">ตารางกิจกรรม</Link>
     <Link href="/admin/settings">ตั้งค่าระบบ</Link>
    </nav>
@@ -138,34 +138,40 @@ export default function BackofficePage(){
     </div>
 
     <div style={{overflowX:"auto"}}>
-     <table style={{width:"100%",borderCollapse:"collapse",minWidth:"620px"}}>
+     <table style={{width:"100%",borderCollapse:"collapse",minWidth:"720px",tableLayout:"fixed"}}>
+      <colgroup>
+       <col style={{width:"22%"}}/>
+       <col style={{width:"14%"}}/>
+       <col style={{width:"22%"}}/>
+       <col style={{width:"14%"}}/>
+       <col style={{width:"10%"}}/>
+       <col style={{width:"18%"}}/>
+      </colgroup>
       <thead>
        <tr>
         <th style={{textAlign:"left",padding:"10px"}}>ชื่อ</th>
-        <th style={{textAlign:"left",padding:"10px"}}>เลข + ประเภท + ยอด + สด</th>
+        <th style={{textAlign:"left",padding:"10px"}}>เลข</th>
+        <th style={{textAlign:"left",padding:"10px"}}>ประเภท</th>
+        <th style={{textAlign:"right",padding:"10px"}}>ยอด</th>
+        <th style={{textAlign:"center",padding:"10px"}}>สด</th>
         <th style={{textAlign:"right",padding:"10px"}}>ยอดรวม</th>
        </tr>
       </thead>
       <tbody>
-       {group.members.map(member=><tr key={`${group.dateKey}-${member.name}`}>
-        <td style={{verticalAlign:"top",padding:"12px",fontWeight:700}}>{member.name}</td>
-        <td style={{verticalAlign:"top",padding:"12px"}}>
-         <div style={{display:"grid",gap:"8px"}}>
-          {member.items.map((item,index)=><div
-           key={`${item.id}-${index}`}
-           style={{display:"grid",gridTemplateColumns:"0.8fr 1.2fr 0.8fr 0.6fr",gap:"10px",alignItems:"center"}}
-          >
-           <strong>{item.value}</strong>
-           <strong>{item.category_label}</strong>
-           <strong style={{textAlign:"right"}}>{Number(item.heart).toLocaleString()}</strong>
-           <strong style={{textAlign:"center"}}>{item.cash?"สด":"-"}</strong>
-          </div>)}
-         </div>
-        </td>
-        <td style={{verticalAlign:"top",padding:"12px",textAlign:"right",fontWeight:700}}>
-         {member.total.toLocaleString()}
-        </td>
-       </tr>)}
+       {group.members.map(member=>member.items.map((item,index)=><tr key={`${group.dateKey}-${member.name}-${item.id}-${index}`}>
+        {index===0&&<td
+         rowSpan={member.items.length}
+         style={{verticalAlign:"top",padding:"12px",fontWeight:700}}
+        >{member.name}</td>}
+        <td style={{padding:"12px",fontWeight:700}}>{item.value}</td>
+        <td style={{padding:"12px",fontWeight:700}}>{item.category_label}</td>
+        <td style={{padding:"12px",textAlign:"right",fontWeight:700}}>{Number(item.heart).toLocaleString()}</td>
+        <td style={{padding:"12px",textAlign:"center",fontWeight:700}}>{item.cash?"สด":"-"}</td>
+        {index===0&&<td
+         rowSpan={member.items.length}
+         style={{verticalAlign:"top",padding:"12px",textAlign:"right",fontWeight:700}}
+        >{member.total.toLocaleString()}</td>}
+       </tr>))}
       </tbody>
      </table>
     </div>
