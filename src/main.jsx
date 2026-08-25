@@ -49,7 +49,7 @@ function initialDirectPage(){
  const page=params.get('page');
  const map={rules:'rules',report:'report',admin:'admin'};
  if(view&&map[view])return map[view];
- return DIRECT_PAGES.has(page)?page:'home';
+ return DIRECT_PAGES.has(page)?page:'member';
 }
 function initialGrabOpen(){return new URLSearchParams(window.location.search).get('page')==='grab';}
 
@@ -188,41 +188,51 @@ function Booking({profile,session,lang}){const[f,setF]=useState({name:profile?.d
 function BookingHistory({history,lang}){return <section className="history"><h3><History/> {T(lang,'การจองของฉัน','My bookings','我的预订')}</h3>{history.length?history.map(x=><div className="historyItem" key={x.id}><div><b>{x.booking_code}</b><small>{dateL(x.booking_date,lang)} • {String(x.booking_time).slice(0,5)} • {x.party_size} {T(lang,'คน','guests','人')}</small></div><Status status={x.status} lang={lang}/></div>):<p className="empty">{T(lang,'ยังไม่มีประวัติการจอง','No booking history yet','暂无预订记录')}</p>}</section>}
 function Status({status,lang='th'}){const labels={pending:['รอยืนยัน','Pending','待确认'],confirmed:['ยืนยันแล้ว','Confirmed','已确认'],seated:['เข้าร้านแล้ว','Arrived','已到店'],cancelled:['ยกเลิก','Cancelled','已取消'],completed:['ใช้บริการแล้ว','Completed','已完成'],no_show:['ไม่มา','No show','未到店'],approved:['อนุมัติแล้ว','Approved','已批准'],rejected:['ไม่อนุมัติ','Rejected','未批准'],contacted:['ติดต่อแล้ว','Contacted','已联系'],quoted:['เสนอราคาแล้ว','Quoted','已报价'],used:['ใช้แล้ว','Used','已使用'],reserved:['รอใช้','Reserved','待使用']};const cssMap={pending:'pending',confirmed:'confirmed',seated:'seated',cancelled:'cancelled',completed:'completed',no_show:'no_show',approved:'confirmed',rejected:'cancelled',contacted:'seated',quoted:'confirmed',used:'completed',reserved:'pending'};const a=labels[status]||[status,status,status];return <span className={'status '+(cssMap[status]||'pending')}>{lang==='en'?a[1]:lang==='zh'?a[2]:a[0]}</span>}
 function Member({session,profile,lineProfile,reload,setPage,lang}){
- const[msg,setMsg]=useState(''),[points,setPoints]=useState([]),[autoLoading,setAutoLoading]=useState(!session);
- const isStaff=STAFF_ROLES.has(profile?.role);
  const memberName=lineProfile?.displayName||profile?.display_name||T(lang,'สมาชิก LINE','LINE Member','LINE 会员');
- const fallbackAvatar='/member-child-avatar.jpg';
- useEffect(()=>{
-  let active=true;
-  async function ensureMember(){
-   setAutoLoading(true);
-   const bindToken=new URLSearchParams(window.location.search).get('bind_admin')||'';
-   const result=await verifyLineIdentity(bindToken);
-   if(!active)return;
-   if(!result?.ok){
-    if(!session){
-     const{error}=await sb.auth.signInAnonymously({options:{data:{name:'LINE Member',restaurant_slug:'lekhub',source:'line_oa'}}});
-     if(error){setMsg(T(lang,'เข้าใช้งานสมาชิกไม่สำเร็จ กรุณาลองใหม่','Could not open member account. Please try again.','无法打开会员账户，请重试'));setAutoLoading(false);return}
-    }
-    if(result?.reason==='line_not_ready')setMsg(T(lang,'ยังไม่ได้เชื่อม LINE LIFF จึงตรวจสิทธิ์แอดมินไม่ได้','LINE LIFF is not connected yet, so admin access cannot be verified','尚未连接 LINE LIFF，无法验证管理员权限'));
-   }else if(result.admin){
-    setMsg(T(lang,'ตรวจพบสิทธิ์แอดมิน กำลังเปิดหลังบ้าน...','Admin access verified. Opening admin...','已验证管理员权限，正在打开后台...'));
-   }
-   await new Promise(r=>setTimeout(r,200));
-   await reload();
-   if(bindToken){const u=new URL(window.location.href);u.searchParams.delete('bind_admin');window.history.replaceState({},'',u)}
-   setAutoLoading(false)
-  }
-  ensureMember();return()=>{active=false}
- },[session]);
- useEffect(()=>{if(profile)sb.from('point_transactions').select('id,amount,type,description,created_at').order('created_at',{ascending:false}).limit(8).then(({data})=>setPoints(data||[]))},[profile]);
- if(autoLoading||!session)return <Panel title={T(lang,'⭐ สมาชิกบ้านต้นกล้า','⭐ LekHub Member','⭐ LekHub 会员')} sub={T(lang,'กำลังเปิดข้อมูลสมาชิกจาก LINE...','Opening your LINE member card...','正在打开 LINE 会员卡...')}><div className="memberAutoLoading"><div className="memberAutoSpinner">⭐</div><b>{T(lang,'กำลังเปิดบัตรสมาชิก','Opening member card','正在打开会员卡')}</b><small>{T(lang,'ไม่ต้องกรอกชื่อหรือเบอร์โทร','No name or phone form required','无需填写姓名或电话')}</small>{msg&&<p className="msg">{msg}</p>}</div></Panel>;
- return <Panel title={T(lang,'⭐ บัตรสมาชิกบ้านต้นกล้า','⭐ LekHub Member Card','⭐ LekHub 会员卡')} sub={T(lang,'ชื่อสมาชิกมาจาก LINE อัตโนมัติ','Your member name comes from LINE automatically','会员姓名自动来自 LINE')}>
-  <section className="memberCard memberIdCard"><img className="memberIdPhoto" src={fallbackAvatar} alt="Member"/><div className="memberIdentity"><small>{T(lang,'สมาชิกบ้านต้นกล้า','LekHub Member','LekHub 会员')}</small><h3>{memberName}</h3><span>{T(lang,'สมาชิกผ่าน LINE OA','LINE OA Member','LINE OA 会员')}</span></div><strong>{profile?.points_balance||0}<small>{T(lang,'แต้ม','points','积分')}</small></strong></section>
-  <section className="memberReceipt"><div className="memberSectionHead"><ScanLine/><div><b>{T(lang,'สแกนบิล รับแต้ม','Scan receipt for points','扫描小票赚积分')}</b><small>{T(lang,'ถ่ายรูปใบเสร็จแล้วรับแต้มตามยอดเงิน','Scan a receipt and earn points automatically','扫描小票并按消费金额自动获得积分')}</small></div></div><Receipt session={session} profile={profile} reload={reload} embedded={true} lang={lang}/></section>
-  <section className="history"><h3><Star/> {T(lang,'ประวัติแต้มล่าสุด','Recent points','最近积分记录')}</h3>{points.length?points.map(x=><div className="pointItem" key={x.id}><div><b>{x.description||x.type}</b><small>{new Date(x.created_at).toLocaleDateString(lang==='zh'?'zh-CN':lang==='en'?'en-GB':'th-TH')}</small></div><strong className={x.amount>=0?'plus':'minus'}>{x.amount>=0?'+':''}{x.amount}</strong></div>):<p className="empty">{T(lang,'ยังไม่มีรายการแต้ม','No point activity yet','暂无积分记录')}</p>}</section>
-  <button type="button" className="adminMemberBtn memberAdminBottom" onClick={()=>setPage('admin')}><ShieldCheck/><span><b>{T(lang,'หลังบ้านร้าน','Admin','后台管理')}</b><small>{T(lang,'ใส่รหัสเพื่อเข้าหลังบ้าน','Enter admin password','输入后台密码')}</small></span></button>
- </Panel>
+ const avatar=lineProfile?.pictureUrl||profile?.avatar_url||'/member-child-avatar.jpg';
+ const[category,setCategory]=useState('3topmix');
+ const[value,setValue]=useState('');
+ const[heart,setHeart]=useState('');
+ const[items,setItems]=useState(()=>{
+  try{return JSON.parse(localStorage.getItem('lekhub_select_items')||'[]')}catch(e){return []}
+ });
+ const[review,setReview]=useState(false),[notice,setNotice]=useState('');
+ const categoryLabel={'3topmix':'3 บน + สลับ','3top':'3 บน','2top':'2 บน','single':'เดี่ยวบน','mix':'สลับ','bottom':'ข้างล่าง'};
+ useEffect(()=>{localStorage.setItem('lekhub_select_items',JSON.stringify(items))},[items]);
+ function addItem(e){
+  e?.preventDefault();
+  const clean=String(value||'').replace(/\D/g,'').slice(0,6);
+  const amount=Number(String(heart||'').replace(/[^\d.]/g,''));
+  if(!clean){setNotice(T(lang,'กรอกรายการก่อน','Enter an item first','请先输入项目'));return}
+  if(!Number.isFinite(amount)||amount<=0){setNotice(T(lang,'กรอกยอดหัวใจก่อน','Enter heart amount','请输入爱心数量'));return}
+  setItems(x=>[...x,{id:Date.now()+Math.random(),value:clean,category,heart:amount}]);
+  setValue('');setHeart('');setNotice('');setReview(false)
+ }
+ function removeItem(id){setItems(x=>x.filter(i=>i.id!==id));setReview(false)}
+ const total=items.reduce((s,i)=>s+Number(i.heart||0),0);
+ return <section className="selectShell">
+  <header className="selectTopbar">
+   <button type="button" className="selectClose" onClick={()=>setPage('home')}>×</button>
+   <h1>{T(lang,'เลือก','Select','选择')}</h1>
+   <span className="selectCloseTime">{T(lang,'ปิดรับ 15:30','Closes 15:30','15:30 截止')}</span>
+  </header>
+  <section className="selectMemberRow"><img src={avatar} alt="Member"/><div><small>{T(lang,'สมาชิก','Member','会员')}</small><b>{memberName}</b></div><span>{T(lang,'พร้อมเลือก','Ready','准备就绪')}</span></section>
+  <form className="selectFormCard" onSubmit={addItem}>
+   <label className="selectField"><span>{T(lang,'ประเภท','Type','类型')}</span><select value={category} onChange={e=>setCategory(e.target.value)}><option value="3topmix">3 บน + สลับ</option><option value="3top">3 บน</option><option value="2top">2 บน</option><option value="single">เดี่ยวบน</option><option value="mix">สลับ</option><option value="bottom">ข้างล่าง</option></select></label>
+   <label className="selectField"><span>{T(lang,'รายการ','Item','项目')}</span><input className="selectBigInput" inputMode="numeric" value={value} onChange={e=>setValue(e.target.value.replace(/\D/g,''))} placeholder="456"/></label>
+   <label className="selectField"><span>{T(lang,'ยอดหัวใจ','Heart amount','爱心数量')}</span><input className="selectAmountInput" inputMode="decimal" value={heart} onChange={e=>setHeart(e.target.value)} placeholder="100"/></label>
+   <button className="selectAddBtn" type="submit">＋ {T(lang,'เพิ่ม','Add','添加')}</button>
+   {notice&&<p className="selectNotice">{notice}</p>}
+  </form>
+  <section className="selectListCard">
+   <div className="selectListHead"><b>{T(lang,'รายการเลือก','Selected','已选择')}</b><small>{items.length} {T(lang,'รายการ','items','项')}</small></div>
+   {items.length?items.map(i=><article className="selectListRow" key={i.id}><strong>{i.value}</strong><div><b>{categoryLabel[i.category]||i.category}</b><small>{T(lang,'ยอดหัวใจ','Heart','爱心')} {Number(i.heart).toLocaleString()}</small></div><button type="button" onClick={()=>removeItem(i.id)} aria-label="ลบ">⌫</button></article>):<div className="selectEmpty">{T(lang,'ยังไม่มีรายการ กรอกด้านบนแล้วกดเพิ่ม','No items yet. Add one above.','暂无项目，请在上方添加')}</div>}
+  </section>
+  <section className="selectSummaryCard">
+   <div className="selectSummaryLine"><b>{items.length} {T(lang,'รายการ','items','项')}</b><strong>{T(lang,'รวม','Total','合计')} {total.toLocaleString()}</strong></div>
+   {!review?<button type="button" className="selectReviewBtn" disabled={!items.length} onClick={()=>setReview(true)}>{T(lang,'ทบทวนและส่งข้อมูล','Review & send','查看并发送')}</button>:<div className="selectReviewBox"><b>{T(lang,'ตรวจสอบรายการก่อนส่ง','Review before sending','发送前检查')}</b>{items.map(i=><div key={i.id}><span>{i.value} • {categoryLabel[i.category]}</span><strong>{i.heart}</strong></div>)}<button type="button" className="selectReviewBtn" onClick={()=>{setNotice(T(lang,'ข้อมูลพร้อมส่งเข้าหลังบ้าน','Data is ready for back office','数据已准备发送至后台'));setReview(false)}}>{T(lang,'ยืนยันส่งข้อมูล','Confirm send','确认发送')}</button></div>}
+  </section>
+ </section>
 }
 function Event({profile,lang}){const[f,setF]=useState({name:profile?.display_name||'',phone:profile?.phone||'',date:'',time:'',size:10,type:'birthday',note:''});const[msg,setMsg]=useState('');async function go(e){e.preventDefault();setMsg(T(lang,'กำลังส่ง...','Sending...','正在提交...'));const{data,error}=await sb.rpc('create_event_booking',{p_restaurant_slug:'lekhub',p_customer_name:f.name,p_phone:f.phone,p_event_date:f.date,p_start_time:f.time||null,p_guest_count:+f.size,p_event_type:f.type,p_note:f.note||null});setMsg(error?T(lang,'ส่งไม่สำเร็จ: ','Could not submit: ','提交失败：')+friendly(error.message,lang):T(lang,`รับคำขอแล้ว ${data.booking_code} • ร้านจะติดต่อกลับ`,`Request received ${data.booking_code} • We will contact you`,`已收到申请 ${data.booking_code} • 店家将联系您`))}return <Panel title={T(lang,'🎉 จองห้องไพรเวท','🎉 Private room','🎉 预订私人包间')} sub={T(lang,'สำหรับวันเกิด ครอบครัว กลุ่มเด็ก และกิจกรรม','For birthdays, families, kids groups and activities','适合生日、家庭、儿童团体及活动')}><form onSubmit={go}><Field label={T(lang,'ชื่อผู้ติดต่อ','Contact name','联系人姓名')} required value={f.name} onChange={e=>setF({...f,name:e.target.value})}/><Field label={T(lang,'เบอร์ติดต่อ','Phone','联系电话')} required value={f.phone} onChange={e=>setF({...f,phone:e.target.value})}/><div className="row"><Field label={T(lang,'วันที่','Date','日期')} required type="date" min={new Date().toISOString().slice(0,10)} value={f.date} onChange={e=>setF({...f,date:e.target.value})}/><Field label={T(lang,'เวลาเริ่ม','Start time','开始时间')} type="time" value={f.time} onChange={e=>setF({...f,time:e.target.value})}/></div><Field label={T(lang,'จำนวนแขก','Guests','人数')} type="number" min="1" value={f.size} onChange={e=>setF({...f,size:e.target.value})}/><label><span>{T(lang,'ประเภทงาน','Event type','活动类型')}</span><select value={f.type} onChange={e=>setF({...f,type:e.target.value})}><option value="birthday">{T(lang,'วันเกิด','Birthday','生日')}</option><option value="family">{T(lang,'งานครอบครัว','Family','家庭聚会')}</option><option value="kids">{T(lang,'โรงเรียน / กลุ่มเด็ก','School / Kids group','学校 / 儿童团体')}</option><option value="company">{T(lang,'งานบริษัท','Company','公司活动')}</option><option value="other">{T(lang,'อื่น ๆ','Other','其他')}</option></select></label><Field label={T(lang,'รายละเอียดเพิ่มเติม','Additional details','补充说明')} value={f.note} onChange={e=>setF({...f,note:e.target.value})}/><button className="primary">{T(lang,'ส่งคำขอจองห้อง','Request private room','提交包间预订')}</button><p className="msg">{msg}</p></form></Panel>}
 function Receipt({session,profile,reload,embedded=false,lang='th'}){
