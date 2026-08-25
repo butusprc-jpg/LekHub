@@ -80,13 +80,18 @@ export default function PlayPage(){
   const number=value.replace(/\D/g,"")
   const amountText=amount.replace(/\D/g,"")
 
-  if(category==="single"){
-   if(!/^\d$/.test(number)){
-    setMessage("วิ่งบนใส่ได้แค่เลขเดียว")
-    return
-   }
-  }else if(!/^\d{1,6}$/.test(number)){
-   setMessage("กรุณากรอกเลขให้ครบ")
+  const requiredDigits=
+   category==="single" ? 1 :
+   (category==="3topmix"||category==="3top") ? 3 :
+   (category==="2top"||category==="bottom") ? 2 :
+   0
+
+  if(number.length!==requiredDigits){
+   setMessage(
+    requiredDigits===1
+     ?"วิ่งบนใส่ได้แค่เลขเดียว"
+     :`กรุณาใส่เลขให้ครบ ${requiredDigits} หลัก`
+   )
    return
   }
 
@@ -217,7 +222,17 @@ export default function PlayPage(){
    <label>ประเภท<select value={category} onChange={e=>{setCategory(e.target.value);setValue("");setMessage("")}}>
     {types.map(([k,n])=><option key={k} value={k}>{n}</option>)}
    </select></label>
-   <label>เลข<input inputMode="numeric" pattern="[0-9]*" maxLength={category==="single"?1:6} value={value} onChange={e=>{setValue(e.target.value.replace(/\D/g,"").slice(0,category==="single"?1:6));setMessage("")}}/></label>
+   <label>เลข<input
+    inputMode="numeric"
+    pattern="[0-9]*"
+    maxLength={category==="single"?1:(category==="3topmix"||category==="3top")?3:2}
+    value={value}
+    onChange={e=>{
+     const limit=category==="single"?1:(category==="3topmix"||category==="3top")?3:2
+     setValue(e.target.value.replace(/\D/g,"").slice(0,limit))
+     setMessage("")
+    }}
+   /></label>
    <label>ยอด<input inputMode="numeric" pattern="[0-9]*" value={amount} onChange={e=>{setAmount(e.target.value.replace(/\D/g,""));setMessage("")}}/></label>
    
    <button type="button" className="red-action" onClick={add}>＋ เพิ่ม</button>
@@ -225,8 +240,13 @@ export default function PlayPage(){
   </section>
 
   {!!items.length&&<section className="picked-list">
-   {items.map((x,i)=><div key={`${x.value}-${i}`}>
-    <b>{x.value}</b><span>{x.category_label} {x.heart.toLocaleString()}</span>
+   {items.map((x,i)=><div
+    key={`${x.value}-${i}`}
+    style={{display:"grid",gridTemplateColumns:"1fr 1.4fr 1fr auto",alignItems:"center",gap:"12px"}}
+   >
+    <strong style={{fontWeight:700}}>{x.value}</strong>
+    <strong style={{fontWeight:700}}>{x.category_label}</strong>
+    <strong style={{fontWeight:700,textAlign:"right"}}>{x.heart.toLocaleString()}</strong>
     <button type="button" onClick={()=>setItems(v=>v.filter((_,j)=>j!==i))}>⌫</button>
    </div>)}
   </section>}
