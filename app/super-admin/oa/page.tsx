@@ -40,9 +40,9 @@ export default function TenantOAPage(){
    if(current.role!=="owner"&&current.role!=="super_admin")throw new Error("หน้านี้สำหรับแอดมินหลักเท่านั้น")
    const response=await fetch("/api/super-admin/oa",{credentials:"same-origin",cache:"no-store"})
    const data=await response.json().catch(()=>({}))
-   if(!response.ok||!data.ok)throw new Error(data.error||"โหลด OA ไม่สำเร็จ")
+   if(!response.ok||!data.ok)throw new Error(data.error||"โหลดสมาชิก OA ไม่สำเร็จ")
    setRows(data.rows||[])
-  }catch(caught){setError(caught instanceof Error?caught.message:"โหลด OA ไม่สำเร็จ")}
+  }catch(caught){setError(caught instanceof Error?caught.message:"โหลดสมาชิก OA ไม่สำเร็จ")}
   finally{setLoading(false)}
  }
 
@@ -57,10 +57,10 @@ export default function TenantOAPage(){
     body:JSON.stringify(form),
    })
    const data=await response.json().catch(()=>({}))
-   if(!response.ok||!data.ok)throw new Error(data.error||"เพิ่ม OA ไม่สำเร็จ")
+   if(!response.ok||!data.ok)throw new Error(data.error||"เพิ่มสมาชิก OA ไม่สำเร็จ")
    setForm({tenantKey:"",displayName:"",lineChannelId:"",expiresAt:""})
    await load()
-  }catch(caught){setError(caught instanceof Error?caught.message:"เพิ่ม OA ไม่สำเร็จ")}
+  }catch(caught){setError(caught instanceof Error?caught.message:"เพิ่มสมาชิก OA ไม่สำเร็จ")}
   finally{setWorking("")}
  }
 
@@ -73,15 +73,15 @@ export default function TenantOAPage(){
     body:JSON.stringify({tenantKey,...patch}),
    })
    const data=await response.json().catch(()=>({}))
-   if(!response.ok||!data.ok)throw new Error(data.error||"อัปเดต OA ไม่สำเร็จ")
+   if(!response.ok||!data.ok)throw new Error(data.error||"อัปเดตสมาชิก OA ไม่สำเร็จ")
    setRows(current=>current.map(row=>row.tenant_key===tenantKey?data.row:row))
-  }catch(caught){setError(caught instanceof Error?caught.message:"อัปเดต OA ไม่สำเร็จ")}
+  }catch(caught){setError(caught instanceof Error?caught.message:"อัปเดตสมาชิก OA ไม่สำเร็จ")}
   finally{setWorking("")}
  }
 
  const stats=useMemo(()=>({
   total:rows.length,
-  active:rows.filter(x=>x.status==="active").length,
+  active:rows.filter(x=>x.status==="active"&&(remainingDays(x.expires_at)??0)>=0).length,
   locked:rows.filter(x=>x.status==="locked").length,
   expiring:rows.filter(x=>{const d=remainingDays(x.expires_at);return d!==null&&d>=0&&d<=7}).length,
  }),[rows])
@@ -105,51 +105,56 @@ export default function TenantOAPage(){
    {loading&&<p>กำลังโหลด...</p>}
 
    <div className="stat-grid" style={{marginBottom:"20px"}}>
-    <article><small>OA ทั้งหมด</small><b>{stats.total}</b></article>
+    <article><small>สมาชิกทั้งหมด</small><b>{stats.total}</b></article>
     <article><small>ใช้งาน</small><b>{stats.active}</b></article>
     <article><small>ล็อก</small><b>{stats.locked}</b></article>
     <article><small>หมดใน 7 วัน</small><b>{stats.expiring}</b></article>
    </div>
 
    <form onSubmit={createTenant} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:"10px",padding:"16px",border:"1px solid #ddd",borderRadius:"12px",marginBottom:"22px"}}>
-    <input required value={form.displayName} onChange={e=>setForm({...form,displayName:e.target.value})} placeholder="ชื่อ OA / ผู้เช่า" />
-    <input required value={form.tenantKey} onChange={e=>setForm({...form,tenantKey:e.target.value})} placeholder="Tenant slug เช่น cafe-01" />
+    <input required value={form.displayName} onChange={e=>setForm({...form,displayName:e.target.value})} placeholder="ชื่อสมาชิก / ชื่อ OA" />
+    <input required value={form.tenantKey} onChange={e=>setForm({...form,tenantKey:e.target.value})} placeholder="รหัสผู้เช่า เช่น oa-001" />
     <input value={form.lineChannelId} onChange={e=>setForm({...form,lineChannelId:e.target.value})} placeholder="LINE Channel ID" />
     <input type="date" value={form.expiresAt} onChange={e=>setForm({...form,expiresAt:e.target.value})} />
-    <button type="submit" disabled={working==="create"} className="red-action">{working==="create"?"กำลังเพิ่ม...":"+ เพิ่ม OA ผู้เช่า"}</button>
+    <button type="submit" disabled={working==="create"} className="red-action">{working==="create"?"กำลังเพิ่ม...":"+ เพิ่มสมาชิก OA"}</button>
    </form>
 
-   <div style={{display:"grid",gap:"14px"}}>
-    {rows.map(row=>{
-     const days=remainingDays(row.expires_at)
-     const expired=days!==null&&days<0
-     return <article key={row.tenant_key} style={{border:"1px solid #ddd",borderRadius:"12px",padding:"16px",background:"#fff"}}>
-      <div style={{display:"flex",justifyContent:"space-between",gap:"12px",alignItems:"flex-start",flexWrap:"wrap"}}>
-       <div>
-        <h2 style={{margin:"0 0 4px"}}>{row.display_name}</h2>
-        <small>Tenant: {row.tenant_key}</small><br/>
-        <small>Channel ID: {row.line_channel_id||"-"}</small>
-       </div>
-       <strong>{row.status==="active"?(expired?"หมดอายุ":"ใช้งาน"):row.status==="locked"?"ล็อก":"หมดอายุ"}</strong>
-      </div>
-
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"10px",marginTop:"14px"}}>
-       <div><small>วันหมดอายุ</small><div style={{fontWeight:700}}>{dateText(row.expires_at)}</div></div>
-       <div><small>เหลือ</small><div style={{fontWeight:700}}>{days===null?"ไม่จำกัด":days<0?`เกิน ${Math.abs(days)} วัน`:`${days} วัน`}</div></div>
-       <div><small>สถานะ</small><div style={{fontWeight:700}}>{row.status}</div></div>
-      </div>
-
-      <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"16px"}}>
-       <button type="button" disabled={working===row.tenant_key} onClick={()=>void patchTenant(row.tenant_key,{extendDays:30})}>รับชำระ +30 วัน</button>
-       {row.status==="locked"
-        ?<button type="button" disabled={working===row.tenant_key} onClick={()=>void patchTenant(row.tenant_key,{status:"active"})}>ปลดล็อก</button>
-        :<button type="button" disabled={working===row.tenant_key} onClick={()=>void patchTenant(row.tenant_key,{status:"locked"})}>ล็อก OA</button>}
-       <Link href={`/admin?tenant=${encodeURIComponent(row.tenant_key)}`} style={{display:"inline-flex",alignItems:"center",padding:"8px 12px",border:"1px solid #ccc",borderRadius:"8px",textDecoration:"none",color:"inherit"}}>เปิดหลังบ้าน</Link>
-      </div>
-     </article>
-    })}
-    {!loading&&!rows.length&&!error&&<p>ยังไม่มี OA ผู้เช่า</p>}
-   </div>
+   <section style={{border:"1px solid #ddd",borderRadius:"12px",overflow:"hidden",background:"#fff"}}>
+    <div style={{padding:"14px 16px",borderBottom:"1px solid #eee"}}><h2 style={{margin:0}}>รายชื่อสมาชิก OA</h2></div>
+    <div style={{overflowX:"auto"}}>
+     <table style={{width:"100%",borderCollapse:"collapse",minWidth:"760px"}}>
+      <thead><tr>
+       <th style={{textAlign:"left",padding:"12px"}}>สมาชิก / OA</th>
+       <th style={{textAlign:"left",padding:"12px"}}>Channel ID</th>
+       <th style={{textAlign:"left",padding:"12px"}}>วันหมดอายุ</th>
+       <th style={{textAlign:"left",padding:"12px"}}>คงเหลือ</th>
+       <th style={{textAlign:"left",padding:"12px"}}>สถานะ</th>
+       <th style={{textAlign:"left",padding:"12px"}}>คุม</th>
+      </tr></thead>
+      <tbody>
+       {rows.map(row=>{
+        const days=remainingDays(row.expires_at)
+        const expired=days!==null&&days<0
+        const status=row.status==="locked"?"ล็อก":expired||row.status==="expired"?"หมดอายุ":"ใช้งาน"
+        return <tr key={row.tenant_key} style={{borderTop:"1px solid #eee"}}>
+         <td style={{padding:"12px"}}><b>{row.display_name}</b><br/><small>{row.tenant_key}</small></td>
+         <td style={{padding:"12px"}}>{row.line_channel_id||"-"}</td>
+         <td style={{padding:"12px",fontWeight:700}}>{dateText(row.expires_at)}</td>
+         <td style={{padding:"12px"}}>{days===null?"ไม่จำกัด":days<0?`หมดแล้ว ${Math.abs(days)} วัน`:`${days} วัน`}</td>
+         <td style={{padding:"12px",fontWeight:700}}>{status}</td>
+         <td style={{padding:"12px"}}><div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+          <button type="button" disabled={working===row.tenant_key} onClick={()=>void patchTenant(row.tenant_key,{extendDays:30})}>ต่ออายุ +30 วัน</button>
+          {row.status==="locked"
+           ?<button type="button" disabled={working===row.tenant_key} onClick={()=>void patchTenant(row.tenant_key,{status:"active"})}>ปลดล็อก</button>
+           :<button type="button" disabled={working===row.tenant_key} onClick={()=>void patchTenant(row.tenant_key,{status:"locked"})}>ล็อก</button>}
+         </div></td>
+        </tr>
+       })}
+      </tbody>
+     </table>
+    </div>
+    {!loading&&!rows.length&&!error&&<p style={{padding:"16px"}}>ยังไม่มีสมาชิก OA</p>}
+   </section>
   </section>
  </main>
 }
