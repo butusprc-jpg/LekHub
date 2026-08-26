@@ -4,7 +4,7 @@ import { initLIFF, type LiffClient, type LineProfile } from "../../../lib/liff"
 import { createClient } from "../../../lib/supabase/client"
 
 type Item={value:string;category:string;category_label:string;heart:number}
-const types=[["3topmix","3 บนสลับ"],["3top","3 บน"],["2top","2 บน"],["single","วิ่งบน"],["bottom","2 ล่าง"]]
+const types=[["3topmix","3 บนสลับ"],["3top","3 บน"],["3front","3 หน้า"],["3back","3 หลัง"],["2top","2 บน"],["single","วิ่งบน"],["bottom","2 ล่าง"]]
 
 
 function roundLabel(value?:string|null){
@@ -138,13 +138,10 @@ export default function PlayPage(){
    body:JSON.stringify({accessToken}),
   })
   const result=await response.json().catch(()=>({}))
-  if(!response.ok||!result.ok||!result.sessionToken){
+  if(!response.ok||!result.ok){
    setMessage(result.error==="line_user_not_admin"?"LINE นี้ไม่มีสิทธิ์เข้าหลังบ้าน":`เข้าหลังบ้านไม่สำเร็จ: ${result.error||"unknown"}`)
    return true
   }
-
-  // Do not rely on embedded-browser cookies. Persist the bearer session client-side.
-  localStorage.setItem("lekhub_line_admin_token",String(result.sessionToken))
 
   const focus=params.get("focus")
   const next=
@@ -169,7 +166,7 @@ export default function PlayPage(){
 
   const requiredDigits=
    category==="single" ? 1 :
-   (category==="3topmix"||category==="3top") ? 3 :
+   (category==="3topmix"||category==="3top"||category==="3front"||category==="3back") ? 3 :
    (category==="2top"||category==="bottom") ? 2 :
    0
 
@@ -218,16 +215,6 @@ export default function PlayPage(){
   setReviewing(true)
  }
 
- function fallbackUserId(){
-  const key="lekhub_web_user_id"
-  let id=localStorage.getItem(key)
-  if(!id){
-   id=`web-${crypto.randomUUID()}`
-   localStorage.setItem(key,id)
-  }
-  return id
- }
-
  async function submit(){
   if(!items.length||sending)return
   if(cash&&!attachment){setMessage("เลือกสดต้องแนบภาพก่อนส่ง");setReviewing(false);return}
@@ -235,37 +222,48 @@ export default function PlayPage(){
   setSending(true)
   setMessage("กำลังบันทึก...")
   const activeLiff=liff
-  const memberName=profile?.displayName||"สมาชิก"
-  const memberUserId=profile?.userId||fallbackUserId()
-  const code=`SL-${Date.now().toString(36).toUpperCase()}`
+  const accessToken=liff?.getAccessToken?.()||""
+  if(!profile||!accessToken){
+   setMessage("กรุณาเปิดผ่าน LINE OA แล้วลองใหม่")
+   setSending(false)
+   return
+  }
   let attachmentUrl:string|null=null
 
   if(attachment){
-   const ext=(attachment.name.split(".").pop()||"jpg").toLowerCase()
-   const safeExt=["jpg","jpeg","png","webp"].includes(ext)?ext:"jpg"
-   const path=`${memberUserId}/${Date.now()}-${crypto.randomUUID()}.${safeExt}`
-   const supabase=createClient()
-   const {error:uploadError}=await supabase.storage.from("lekhub-uploads").upload(path,attachment,{
-    cacheControl:"3600",
-    upsert:false,
-    contentType:attachment.type||"image/jpeg",
+   const form=new FormData()
+   form.set("file",attachment)
+   const uploadResponse=await fetch("/api/member/upload",{
+    method:"POST",
+    headers:{Authorization:`Bearer ${accessToken}`},
+    cache:"no-store",
+    body:form,
    })
-   if(uploadError){
-    setMessage(`อัพโหลดภาพไม่สำเร็จ: ${uploadError.message}`)
+   const uploadResult=await uploadResponse.json().catch(()=>({}))
+   if(!uploadResponse.ok||!uploadResult?.ok||!uploadResult?.url){
+    const reason=String(uploadResult?.error||"upload_failed")
+    setMessage(reason==="file_too_large"?"ไฟล์ภาพใหญ่เกิน 5MB":reason==="unsupported_file_type"?"รองรับเฉพาะ JPG, PNG, WEBP":"อัพโหลดภาพไม่สำเร็จ")
     setSending(false)
     return
    }
-   attachmentUrl=supabase.storage.from("lekhub-uploads").getPublicUrl(path).data.publicUrl
+   attachmentUrl=String(uploadResult.url)
   }
 
-  const {data,error}=await createClient().rpc("submit_lekhub_submission",{
-   p_reference_code:code,
-   p_line_user_id:memberUserId,
-   p_member_name:memberName,
-   p_member_avatar:profile?.pictureUrl||null,
-   p_items:items.map(x=>({...x,cash})),
-   p_attachment_url:attachmentUrl
+  const submitResponse=await fetch("/api/member/submit",{
+   method:"POST",
+   headers:{
+    "content-type":"application/json",
+    Authorization:`Bearer ${accessToken}`,
+   },
+   cache:"no-store",
+   body:JSON.stringify({
+    items:items.map(x=>({...x,cash})),
+    attachmentUrl,
+   }),
   })
+  const submitResult=await submitResponse.json().catch(()=>({}))
+  const data=submitResult?.data
+  const error=!submitResponse.ok?{message:String(submitResult?.error||"submit_failed")}:null
 
   if(error||!data?.success){
    const raw=String(error?.message||data?.reason||"")
@@ -284,7 +282,7 @@ export default function PlayPage(){
    try{
     await activeLiff.sendMessages([{
     type:"flex",
-    altText:`รายการใหม่ ${code} รวม ${total}`,
+    altText:`รายการใหม่ ${data.reference_code||"รายการใหม่"} รวม ${total}`,
     contents:{
      type:"bubble",
      header:{type:"box",layout:"horizontal",backgroundColor:"#B90000",paddingAll:"16px",contents:[
@@ -293,7 +291,7 @@ export default function PlayPage(){
      ]},
      body:{type:"box",layout:"vertical",contents:[
       {type:"text",text:`สมาชิก  ${profile.displayName}`,weight:"bold"},
-      {type:"text",text:`รหัส  ${data.reference_code||code}`,margin:"md"},
+      {type:"text",text:`รหัส  ${data.reference_code||"-"}`,margin:"md"},
       {type:"separator",margin:"lg"},
       ...items.map(x=>({type:"box",layout:"horizontal",paddingAll:"10px",contents:[
        {type:"text",text:x.value,weight:"bold",size:"xl",flex:2},
@@ -317,7 +315,7 @@ export default function PlayPage(){
   setAttachment(null)
   setAttachmentPreview("")
   setReviewing(false)
-  setMessage(`ส่งเรียบร้อย รหัส ${data.reference_code||code}`)
+  setMessage(`ส่งเรียบร้อย รหัส ${data.reference_code||"-"}`)
   setSending(false)
  }
 
@@ -393,10 +391,10 @@ export default function PlayPage(){
    <label>เลข<input
     inputMode="numeric"
     pattern="[0-9]*"
-    maxLength={category==="single"?1:(category==="3topmix"||category==="3top")?3:2}
+    maxLength={category==="single"?1:(category==="3topmix"||category==="3top"||category==="3front"||category==="3back")?3:2}
     value={value}
     onChange={e=>{
-     const limit=category==="single"?1:(category==="3topmix"||category==="3top")?3:2
+     const limit=category==="single"?1:(category==="3topmix"||category==="3top"||category==="3front"||category==="3back")?3:2
      const next=e.target.value.replace(/\D/g,"").slice(0,limit)
      if(next.length===limit&&blockedValues.includes(next)){
       setMessage(`เลข ${next} งด`)

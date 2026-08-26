@@ -12,6 +12,8 @@ import {
 const TYPE_LABELS=[
  ["3topmix","3 บนสลับ"],
  ["3top","3 บน"],
+ ["3front","3 หน้า"],
+ ["3back","3 หลัง"],
  ["2top","2 บน"],
  ["single","วิ่งบน"],
  ["bottom","2 ล่าง"],
@@ -147,7 +149,8 @@ export default function SettingsPage(){
      fetch("/api/admin/reward-notify",{
       method:"POST",
       headers:{"content-type":"application/json"},
-      body:JSON.stringify({adminToken:session.token,roundDate:info.round_date,prizeNumber:info.prize_number,winners:info.winners}),
+      credentials:"same-origin",
+      body:JSON.stringify({roundDate:info.round_date,prizeNumber:info.prize_number,winners:info.winners}),
      }).catch(()=>{})
     }
    }

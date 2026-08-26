@@ -19,20 +19,45 @@ function roundLabel(value?:string|null){
  return `${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${String((y+543)%100).padStart(2,"0")}`
 }
 
+const CATEGORY_ORDER=["3 บนสลับ","3 บน","3 หน้า","3 หลัง","2 บน","วิ่งบน","2 ล่าง"] as const
+const CATEGORY_KEY:Record<string,string>={
+ "3 บนสลับ":"3topmix",
+ "3 บน":"3top",
+ "3 หน้า":"3front",
+ "3 หลัง":"3back",
+ "2 บน":"2top",
+ "วิ่งบน":"single",
+ "2 ล่าง":"bottom",
+}
+function categoryRank(label:string){
+ const index=CATEGORY_ORDER.indexOf(label as typeof CATEGORY_ORDER[number])
+ return index<0?999:index
+}
+function timeOnly(value:string){
+ return new Intl.DateTimeFormat("th-TH",{timeZone:"Asia/Bangkok",hour:"2-digit",minute:"2-digit"}).format(new Date(value))
+}
+
 export default function BackofficePage(){
  const [session,setSession]=useState<ClientAdminSession|null>(null)
  const [rows,setRows]=useState<Report[]>([])
  const [error,setError]=useState("")
  const [loading,setLoading]=useState(true)
  const [exportType,setExportType]=useState<"self"|"office"|"analysis">("self")
+ const [multipliers,setMultipliers]=useState<Record<string,number>>({})
 
  async function load(){
   setLoading(true);setError("")
   try{
    const current=await ensureLineAdminSession();setSession(current)
-   const {data,error}=await adminRpc(current,"lekhub_line_admin_list_backoffice_reports",{p_limit:500})
-   if(error)throw new Error(error.message)
-   setRows((data||[]) as Report[])
+   const [reportsResult,settingsResult]=await Promise.all([
+    adminRpc(current,"lekhub_line_admin_list_backoffice_reports",{p_limit:500}),
+    adminRpc(current,"lekhub_line_admin_get_settings",{}),
+   ])
+   if(reportsResult.error)throw new Error(reportsResult.error.message)
+   if(settingsResult.error)throw new Error(settingsResult.error.message)
+   setRows((reportsResult.data||[]) as Report[])
+   const raw=settingsResult.data?.category_amounts||{}
+   setMultipliers(Object.fromEntries(Object.entries(raw).map(([key,value])=>[key,Number(value)||0])))
   }catch(caught){setError(caught instanceof Error?caught.message:"โหลดตารางกิจกรรมไม่สำเร็จ")}
   finally{setLoading(false)}
  }
@@ -40,8 +65,8 @@ export default function BackofficePage(){
  useEffect(()=>{load()},[])
  useEffect(()=>{
   if(!session)return
-  fetch("https://uhpgnwclyzjnmnbrnglb.supabase.co/functions/v1/lekhub-cleanup-uploads",{
-   method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({adminToken:session.token})
+  fetch("/api/admin/cleanup-uploads",{
+   method:"POST",credentials:"same-origin",cache:"no-store"
   }).catch(()=>{})
  },[session])
 
@@ -62,6 +87,38 @@ export default function BackofficePage(){
   }
   return [...map.entries()].sort(([a],[b])=>b.localeCompare(a)).map(([dateKey,g])=>({dateKey,dateLabel:g.label,members:[...g.members.values()],total:g.total}))
  },[rows])
+
+ const officeItems=useMemo(()=>groups
+  .flatMap(g=>g.members.flatMap(m=>m.items))
+  .sort((a,b)=>{
+   const categoryDiff=categoryRank(a.category_label)-categoryRank(b.category_label)
+   if(categoryDiff)return categoryDiff
+   const valueDiff=String(a.value).localeCompare(String(b.value),"th",{numeric:true})
+   if(valueDiff)return valueDiff
+   return new Date(a.submitted_at||a.imported_at).getTime()-new Date(b.submitted_at||b.imported_at).getTime()
+  }),[groups])
+
+ const analysisItems=useMemo(()=>{
+  const map=new Map<string,{value:string;category_label:string;amount:number;multiplier:number;reward:number}>()
+  for(const item of groups.flatMap(g=>g.members.flatMap(m=>m.items))){
+   const key=`${item.value}|${item.category_label}`
+   const current=map.get(key)||{
+    value:item.value,
+    category_label:item.category_label,
+    amount:0,
+    multiplier:Number(multipliers[CATEGORY_KEY[item.category_label]]||0),
+    reward:0,
+   }
+   current.amount+=Number(item.heart)||0
+   current.reward=(current.amount/10)*current.multiplier
+   map.set(key,current)
+  }
+  return [...map.values()].sort((a,b)=>{
+   const categoryDiff=categoryRank(a.category_label)-categoryRank(b.category_label)
+   if(categoryDiff)return categoryDiff
+   return String(a.value).localeCompare(String(b.value),"th",{numeric:true})
+  })
+ },[groups,multipliers])
 
  function csvText(type:"self"|"office"|"analysis"=exportType){
   if(type==="office"){
@@ -84,13 +141,9 @@ export default function BackofficePage(){
   }
 
   if(type==="analysis"){
-   const lines=[["เลข","ประเภท","รางวัล"].join(",")]
-   const seen=new Set<string>()
-   for(const g of groups)for(const m of g.members)for(const item of m.items){
-    const key=`${item.value}|${item.category_label}`
-    if(seen.has(key))continue
-    seen.add(key)
-    lines.push([item.value,item.category_label,""].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","))
+   const lines=[["เลข","ประเภท","ยอด","รางวัล"].join(",")]
+   for(const item of analysisItems){
+    lines.push([item.value,item.category_label,String(item.amount),String(item.reward)].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","))
    }
    return "\ufeff"+lines.join("\n")
   }
@@ -151,7 +204,7 @@ export default function BackofficePage(){
       <th style={{textAlign:"right",padding:"10px"}}>ยอด</th>
      </tr></thead>
      <tbody>
-      {groups.flatMap(g=>g.members.flatMap(m=>m.items)).map((item,index)=><tr key={`${item.id}-${index}`}>
+      {officeItems.map((item,index)=><tr key={`${item.id}-${index}`}>
        <td style={{padding:"10px"}}>{item.round_date?`รอบวันที่ ${roundLabel(item.round_date)}`:"-"}</td>
        <td style={{padding:"10px"}}>{dateTime(item.submitted_at||item.imported_at)}</td>
        <td style={{padding:"10px",fontWeight:700}}>{item.value}</td>
@@ -165,14 +218,23 @@ export default function BackofficePage(){
    </section>}
 
    {exportType==="analysis"&&<section style={{marginBottom:"28px",overflowX:"auto"}}>
-    <table style={{width:"100%",borderCollapse:"collapse",minWidth:"520px"}}>
-     <thead><tr><th style={{textAlign:"left",padding:"10px"}}>เลข</th><th style={{textAlign:"left",padding:"10px"}}>ประเภท</th><th style={{textAlign:"left",padding:"10px"}}>รางวัล</th></tr></thead>
+    <table style={{width:"100%",borderCollapse:"collapse",minWidth:"640px"}}>
+     <thead><tr>
+      <th style={{textAlign:"left",padding:"10px"}}>เลข</th>
+      <th style={{textAlign:"left",padding:"10px"}}>ประเภท</th>
+      <th style={{textAlign:"right",padding:"10px"}}>ยอด</th>
+      <th style={{textAlign:"right",padding:"10px"}}>รางวัล</th>
+     </tr></thead>
      <tbody>
-      {[...new Map(groups.flatMap(g=>g.members.flatMap(m=>m.items)).map(item=>[`${item.value}|${item.category_label}`,item])).values()].map((item,index)=><tr key={`${item.id}-${index}`}>
-       <td style={{padding:"10px",fontWeight:700}}>{item.value}</td><td style={{padding:"10px"}}>{item.category_label}</td><td style={{padding:"10px"}}></td>
+      {analysisItems.map((item,index)=><tr key={`${item.value}-${item.category_label}-${index}`}>
+       <td style={{padding:"10px",fontWeight:700}}>{item.value}</td>
+       <td style={{padding:"10px"}}>{item.category_label}</td>
+       <td style={{padding:"10px",textAlign:"right",fontWeight:700}}>{item.amount.toLocaleString()}</td>
+       <td style={{padding:"10px",textAlign:"right",fontWeight:800}}>{item.reward.toLocaleString()}</td>
       </tr>)}
      </tbody>
     </table>
+    <small style={{display:"block",marginTop:"8px"}}>สูตรรางวัล = (ยอด ÷ 10) × ค่ายอดประเภทที่ตั้งไว้</small>
    </section>}
 
    {exportType==="self"&&groups.map(group=><section key={group.dateKey} style={{marginBottom:"28px"}}>
@@ -183,14 +245,14 @@ export default function BackofficePage(){
     <div style={{overflowX:"auto"}}>
      <table style={{width:"100%",borderCollapse:"collapse",minWidth:"820px",tableLayout:"fixed"}}>
       <thead><tr>
-       <th style={{textAlign:"left",padding:"10px"}}>ชื่อ</th><th style={{textAlign:"left",padding:"10px"}}>วันเวลา</th><th style={{textAlign:"left",padding:"10px"}}>เลข</th>
+       <th style={{textAlign:"left",padding:"10px"}}>ชื่อ</th><th style={{textAlign:"left",padding:"10px"}}>เวลา</th><th style={{textAlign:"left",padding:"10px"}}>เลข</th>
        <th style={{textAlign:"left",padding:"10px"}}>ประเภท</th><th style={{textAlign:"right",padding:"10px"}}>ยอด</th><th style={{textAlign:"center",padding:"10px"}}>สด</th>
        <th style={{textAlign:"right",padding:"10px"}}>ยอดรวม</th><th style={{textAlign:"center",padding:"10px"}}>ภาพ</th>
       </tr></thead>
       <tbody>
        {group.members.map(member=>member.items.map((item,index)=><tr key={`${group.dateKey}-${member.name}-${item.id}-${index}`}>
-        {index===0&&<td rowSpan={member.items.length} style={{verticalAlign:"top",padding:"12px",fontWeight:700}}>{member.name}{!!member.rounds.length&&<small style={{display:"block",marginTop:"4px"}}>{member.rounds.map(x=>`รอบวันที่ ${roundLabel(x)}`).join(" • ")}</small>}</td>}
-        <td style={{padding:"12px",fontWeight:700}}>{dateTime(item.imported_at)}</td><td style={{padding:"12px",fontWeight:700}}>{item.value}</td>
+        {index===0&&<td rowSpan={member.items.length} style={{verticalAlign:"top",padding:"12px",fontWeight:700}}>{member.name}</td>}
+        <td style={{padding:"12px",fontWeight:700}}>{timeOnly(item.imported_at)}</td><td style={{padding:"12px",fontWeight:700}}>{item.value}</td>
         <td style={{padding:"12px",fontWeight:700}}>{item.category_label}</td><td style={{padding:"12px",textAlign:"right",fontWeight:700}}>{Number(item.heart).toLocaleString()}</td>
         <td style={{padding:"12px",textAlign:"center",fontWeight:700}}>{item.cash?"สด":"-"}</td>
         {index===0&&<td rowSpan={member.items.length} style={{verticalAlign:"top",padding:"12px",textAlign:"right",fontWeight:700}}>{member.total.toLocaleString()}</td>}

@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { initLIFF } from "../../lib/liff"
-import { createClient } from "../../lib/supabase/client"
 
 type ReportItem={id:number;value:string;category_label:string;heart:number;cash?:boolean}
 type RewardItem={selected_value:string;category_label:string;stake:number;multiplier:number;reward_amount:number;prize_number:string}
@@ -39,45 +38,31 @@ function roundLabel(value?:string|null){
 
 export default function Report(){
  const [rows,setRows]=useState<Row[]>([])
- const [lineUserId,setLineUserId]=useState("")
+ const [accessToken,setAccessToken]=useState("")
  const [note,setNote]=useState("")
  const [noteSaving,setNoteSaving]=useState(false)
+ const [noteEditing,setNoteEditing]=useState(true)
  const [noteMessage,setNoteMessage]=useState("")
  const [loading,setLoading]=useState(true)
  const [error,setError]=useState("")
 
  useEffect(()=>{(async()=>{
   try{
-   let userId=""
-   const cached=sessionStorage.getItem("lekhub_member_liff_profile")
-   if(cached){
-    try{
-     const parsed=JSON.parse(cached) as {userId?:string;savedAt?:number}
-     if(parsed.userId&&parsed.savedAt&&Date.now()-parsed.savedAt<10*60*1000)userId=String(parsed.userId)
-    }catch{}
-   }
-   if(!userId){
-    const line=await initLIFF()
-    if(!line)return
-    userId=line.profile.userId
-    sessionStorage.setItem("lekhub_member_liff_profile",JSON.stringify({
-     userId:line.profile.userId,
-     displayName:line.profile.displayName,
-     pictureUrl:line.profile.pictureUrl||"",
-     savedAt:Date.now(),
-    }))
-   }
-   setLineUserId(userId)
-   const supabase=createClient()
-   const noteResult=await supabase.rpc("lekhub_member_get_note",{p_line_user_id:userId})
-   if(noteResult.error)throw new Error(noteResult.error.message)
-   setNote(String(noteResult.data?.note||""))
-   const {data,error}=await supabase.rpc("lekhub_member_list_submissions",{
-    p_line_user_id:userId,
-    p_limit:300,
+   const line=await initLIFF()
+   if(!line)return
+   const token=line.liff.getAccessToken?.()||""
+   if(!token)throw new Error("ไม่พบ LINE access token")
+   setAccessToken(token)
+   const response=await fetch("/api/member/report",{
+    headers:{Authorization:`Bearer ${token}`},
+    cache:"no-store",
    })
-   if(error)throw new Error(error.message)
-   setRows((data||[]) as Row[])
+   const result=await response.json().catch(()=>({}))
+   if(!response.ok||!result?.ok)throw new Error(String(result?.error||"โหลดรายงานไม่สำเร็จ"))
+   const loadedNote=String(result.note||"")
+   setNote(loadedNote)
+   setNoteEditing(!loadedNote)
+   setRows((result.rows||[]) as Row[])
   }catch(caught){
    setError(caught instanceof Error?caught.message:"โหลดรายงานไม่สำเร็จ")
   }finally{setLoading(false)}
@@ -85,13 +70,22 @@ export default function Report(){
 
 
  async function saveNote(){
-  if(!lineUserId||noteSaving)return
+  if(!accessToken||noteSaving)return
   setNoteSaving(true);setNoteMessage("");setError("")
   try{
-   const {data,error}=await createClient().rpc("lekhub_member_set_note",{p_line_user_id:lineUserId,p_note:note})
-   if(error)throw new Error(error.message)
-   if(!data?.success)throw new Error("บันทึกข้อความไม่สำเร็จ")
+   const response=await fetch("/api/member/note",{
+    method:"POST",
+    headers:{
+     "content-type":"application/json",
+     Authorization:`Bearer ${accessToken}`,
+    },
+    cache:"no-store",
+    body:JSON.stringify({note}),
+   })
+   const data=await response.json().catch(()=>({}))
+   if(!response.ok||!data?.ok)throw new Error(String(data?.error||"บันทึกข้อความไม่สำเร็จ"))
    setNote(String(data.note||""))
+   setNoteEditing(false)
    setNoteMessage("บันทึกแล้ว")
   }catch(caught){setError(caught instanceof Error?caught.message:"บันทึกข้อความไม่สำเร็จ")}
   finally{setNoteSaving(false)}
@@ -114,13 +108,18 @@ export default function Report(){
    <textarea
     rows={6}
     value={note}
+    disabled={!noteEditing}
     onChange={e=>setNote(e.target.value)}
     placeholder="กรอกข้อความที่ต้องการบันทึก"
-    style={{width:"100%",marginTop:"8px",boxSizing:"border-box"}}
+    style={{width:"100%",marginTop:"8px",boxSizing:"border-box",background:noteEditing?"#fff":"#e5e7eb",color:"#111",opacity:1}}
    />
-   <button type="button" onClick={saveNote} disabled={noteSaving||!lineUserId} style={{marginTop:"8px"}}>
-    {noteSaving?"กำลังบันทึก...":"บันทึกข้อความ"}
-   </button>
+   <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"8px"}}>
+    {noteEditing?
+     <button type="button" onClick={saveNote} disabled={noteSaving||!accessToken}>{noteSaving?"กำลังบันทึก...":"บันทึกข้อความ"}</button>
+     :
+     <button type="button" onClick={()=>{setNoteEditing(true);setNoteMessage("")}}>แก้ไข</button>
+    }
+   </div>
    {noteMessage&&<small style={{display:"block",marginTop:"6px"}}>{noteMessage}</small>}
   </section>}
 
