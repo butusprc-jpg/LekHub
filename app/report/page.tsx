@@ -48,15 +48,32 @@ export default function Report(){
 
  useEffect(()=>{(async()=>{
   try{
-   const line=await initLIFF()
-   if(!line)return
-   setLineUserId(line.profile.userId)
+   let userId=""
+   const cached=sessionStorage.getItem("lekhub_member_liff_profile")
+   if(cached){
+    try{
+     const parsed=JSON.parse(cached) as {userId?:string;savedAt?:number}
+     if(parsed.userId&&parsed.savedAt&&Date.now()-parsed.savedAt<10*60*1000)userId=String(parsed.userId)
+    }catch{}
+   }
+   if(!userId){
+    const line=await initLIFF()
+    if(!line)return
+    userId=line.profile.userId
+    sessionStorage.setItem("lekhub_member_liff_profile",JSON.stringify({
+     userId:line.profile.userId,
+     displayName:line.profile.displayName,
+     pictureUrl:line.profile.pictureUrl||"",
+     savedAt:Date.now(),
+    }))
+   }
+   setLineUserId(userId)
    const supabase=createClient()
-   const noteResult=await supabase.rpc("lekhub_member_get_note",{p_line_user_id:line.profile.userId})
+   const noteResult=await supabase.rpc("lekhub_member_get_note",{p_line_user_id:userId})
    if(noteResult.error)throw new Error(noteResult.error.message)
    setNote(String(noteResult.data?.note||""))
    const {data,error}=await supabase.rpc("lekhub_member_list_submissions",{
-    p_line_user_id:line.profile.userId,
+    p_line_user_id:userId,
     p_limit:300,
    })
    if(error)throw new Error(error.message)

@@ -37,6 +37,14 @@ export default function PlayPage(){
     if(line){
      setProfile(line.profile)
      setLiff(line.liff)
+     sessionStorage.setItem("lekhub_member_liff_profile",JSON.stringify({
+      userId:line.profile.userId,
+      displayName:line.profile.displayName,
+      pictureUrl:line.profile.pictureUrl||"",
+      savedAt:Date.now(),
+     }))
+     const openingMemberPage=openMemberPageFromLiff()
+     if(openingMemberPage)return
      const openingAdmin=await openAdminFromLiff(line)
      if(!openingAdmin)setMessage("")
     }
@@ -54,6 +62,14 @@ export default function PlayPage(){
   },()=>{})
  },[])
 
+
+ function openMemberPageFromLiff(){
+  const params=new URLSearchParams(window.location.search)
+  const pageTarget=params.get("page")
+  if(pageTarget!=="report")return false
+  window.location.replace("/report")
+  return true
+ }
 
  async function openAdminFromLiff(line:{liff:LiffClient;profile:LineProfile}){
   const params=new URLSearchParams(window.location.search)
