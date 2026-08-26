@@ -12,12 +12,11 @@ import {
 const TYPE_LABELS=[
  ["3topmix","3 บนสลับ"],
  ["3top","3 บน"],
- ["3front","3 หน้า"],
- ["3back","3 หลัง"],
  ["2top","2 บน"],
  ["single","วิ่งบน"],
  ["bottom","2 ล่าง"],
 ] as const
+
 
 function displayRoundInput(value?:string|null){
  if(!value)return ""
@@ -46,9 +45,6 @@ export default function SettingsPage(){
  const [roundDateInput,setRoundDateInput]=useState("")
  const [previousRoundNumber,setPreviousRoundNumber]=useState("")
  const [activityPrizeNumber,setActivityPrizeNumber]=useState("")
- const [activity3Front,setActivity3Front]=useState("")
- const [activity3Back,setActivity3Back]=useState("")
- const [activity2Bottom,setActivity2Bottom]=useState("")
  const [rewardSummary,setRewardSummary]=useState("")
  const [multiplierMessage,setMultiplierMessage]=useState("")
  const [loading,setLoading]=useState(true)
@@ -74,9 +70,6 @@ export default function SettingsPage(){
    setRoundDateInput(displayRoundInput(data?.round_date_override||""))
    setPreviousRoundNumber(String(data?.previous_round_number||"").replace(/\D/g,"").slice(0,6))
    setActivityPrizeNumber(String(data?.activity_prize_number||"").replace(/\D/g,"").slice(0,6))
-   setActivity3Front(String(data?.activity_3front||"").replace(/\D/g,"").slice(0,3))
-   setActivity3Back(String(data?.activity_3back||"").replace(/\D/g,"").slice(0,3))
-   setActivity2Bottom(String(data?.activity_2bottom||"").replace(/\D/g,"").slice(0,2))
    setMessage(`เข้าระบบแล้ว: ${current.displayName}`)
   }catch(caught){
    setError(caught instanceof Error?caught.message:"เข้าตั้งค่าไม่สำเร็จ")
@@ -118,19 +111,7 @@ export default function SettingsPage(){
    return
   }
   if(activityPrizeNumber&& !/^\d{6}$/.test(activityPrizeNumber)){
-   setError("เลขรางวัลกิจกรรมหลักต้องมี 6 หลัก")
-   return
-  }
-  if(activity3Front&& !/^\d{3}$/.test(activity3Front)){
-   setError("เลข 3 หน้าต้องมี 3 หลัก")
-   return
-  }
-  if(activity3Back&& !/^\d{3}$/.test(activity3Back)){
-   setError("เลข 3 หลังต้องมี 3 หลัก")
-   return
-  }
-  if(activity2Bottom&& !/^\d{2}$/.test(activity2Bottom)){
-   setError("เลข 2 ล่างต้องมี 2 หลัก")
+   setError("เลขรางวัลกิจกรรมต้องมี 6 หลัก")
    return
   }
   setSaving(true);setError("");setMessage("กำลังบันทึก...");setRewardSummary("")
@@ -158,23 +139,27 @@ export default function SettingsPage(){
    if(blockedResult.error)throw new Error(blockedResult.error.message)
 
    if(activityPrizeNumber){
-    const result=await adminRpc(session,"lekhub_line_admin_set_activity_result",{
-     p_prize_number:activityPrizeNumber,
-     p_3front:activity3Front||null,
-     p_3back:activity3Back||null,
-     p_2bottom:activity2Bottom||null,
-    })
+    const result=await adminRpc(session,"lekhub_line_admin_set_activity_result",{p_prize_number:activityPrizeNumber})
     if(result.error)throw new Error(result.error.message)
     const info=result.data||{}
-    setRewardSummary(`พบ ${Number(info.winner_items||0)} รายการ • ยอดรางวัลรวม ${Number(info.reward_total||0).toLocaleString()}`)
+    const baseSummary=`พบ ${Number(info.winner_items||0)} รายการ • ยอดรางวัลรวม ${Number(info.reward_total||0).toLocaleString()}`
+    setRewardSummary(baseSummary)
     if(Array.isArray(info.winners)&&info.winners.length){
-     fetch("/api/admin/reward-notify",{
+     const notifyResponse=await fetch("/api/admin/reward-notify",{
       method:"POST",
       headers:{"content-type":"application/json"},
       credentials:"same-origin",
       cache:"no-store",
       body:JSON.stringify({roundDate:info.round_date,prizeNumber:info.prize_number,winners:info.winners}),
-     }).catch(()=>{})
+     })
+     const notify=await notifyResponse.json().catch(()=>({}))
+     if(notify?.skipped==="line_push_not_configured"){
+      setRewardSummary(`${baseSummary} • ยังไม่ได้ตั้ง LINE Push`)
+     }else{
+      const pushed=Number(notify?.pushed||0)
+      const failed=Number(notify?.failed||0)
+      setRewardSummary(`${baseSummary} • ส่ง LINE สำเร็จ ${pushed} คน${failed?` • ไม่สำเร็จ ${failed} คน`:""}`)
+     }
     }
    }
 
@@ -266,28 +251,18 @@ export default function SettingsPage(){
      <small style={{display:"block"}}>จะแสดงด้านบนสุดของหน้าเล่น</small>
     </label>
 
-    <div>
-     <b>เลขรางวัลกิจกรรม</b>
-     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:"10px",marginTop:"10px"}}>
-      <label>
-       <small>รางวัลหลัก 6 หลัก</small>
-       <input inputMode="numeric" pattern="[0-9]*" maxLength={6} value={activityPrizeNumber} onChange={e=>setActivityPrizeNumber(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="123456"/>
-      </label>
-      <label>
-       <small>3 หน้า</small>
-       <input inputMode="numeric" pattern="[0-9]*" maxLength={3} value={activity3Front} onChange={e=>setActivity3Front(e.target.value.replace(/\D/g,"").slice(0,3))} placeholder="123"/>
-      </label>
-      <label>
-       <small>3 หลัง</small>
-       <input inputMode="numeric" pattern="[0-9]*" maxLength={3} value={activity3Back} onChange={e=>setActivity3Back(e.target.value.replace(/\D/g,"").slice(0,3))} placeholder="456"/>
-      </label>
-      <label>
-       <small>2 ล่าง</small>
-       <input inputMode="numeric" pattern="[0-9]*" maxLength={2} value={activity2Bottom} onChange={e=>setActivity2Bottom(e.target.value.replace(/\D/g,"").slice(0,2))} placeholder="78"/>
-      </label>
-     </div>
-     <small style={{display:"block",marginTop:"6px"}}>ระบบเทียบเลขแต่ละประเภทกับรายการในรอบ แล้วคำนวณ ยอดที่เลือก × ค่ายอดประเภท</small>
-    </div>
+    <label>
+     <b>เลขรางวัลกิจกรรม 6 หลัก</b>
+     <input
+      inputMode="numeric"
+      pattern="[0-9]*"
+      maxLength={6}
+      value={activityPrizeNumber}
+      onChange={e=>setActivityPrizeNumber(e.target.value.replace(/\D/g,"").slice(0,6))}
+      placeholder="123456"
+     />
+     <small style={{display:"block"}}>ระบบจะเทียบกับรายการในรอบนี้ แล้วคำนวณ ยอดที่เลือก × ค่ายอดประเภท</small>
+    </label>
     {rewardSummary&&<div className="admin-success">{rewardSummary}</div>}
 
     <label>
