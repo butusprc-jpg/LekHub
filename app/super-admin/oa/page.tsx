@@ -18,7 +18,10 @@ function dateText(value?:string|null){
  if(!value)return "ไม่กำหนด"
  return new Intl.DateTimeFormat("th-TH",{timeZone:"Asia/Bangkok",day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(value))
 }
-
+function dateInputValue(value?:string|null){
+ if(!value)return ""
+ return value.slice(0,10)
+}
 function remainingDays(value?:string|null){
  if(!value)return null
  return Math.ceil((new Date(value).getTime()-Date.now())/86400000)
@@ -27,6 +30,7 @@ function remainingDays(value?:string|null){
 export default function TenantOAPage(){
  const [session,setSession]=useState<ClientAdminSession|null>(null)
  const [rows,setRows]=useState<Tenant[]>([])
+ const [expiryDraft,setExpiryDraft]=useState<Record<string,string>>({})
  const [loading,setLoading]=useState(true)
  const [error,setError]=useState("")
  const [working,setWorking]=useState("")
@@ -40,7 +44,9 @@ export default function TenantOAPage(){
    const response=await fetch("/api/super-admin/oa",{credentials:"same-origin",cache:"no-store"})
    const data=await response.json().catch(()=>({}))
    if(!response.ok||!data.ok)throw new Error(data.error||"โหลดสมาชิก OA ไม่สำเร็จ")
-   setRows(data.rows||[])
+   const nextRows:Tenant[]=data.rows||[]
+   setRows(nextRows)
+   setExpiryDraft(Object.fromEntries(nextRows.map(row=>[row.tenant_key,dateInputValue(row.expires_at)])))
   }catch(caught){setError(caught instanceof Error?caught.message:"โหลดสมาชิก OA ไม่สำเร็จ")}
   finally{setLoading(false)}
  }
@@ -74,8 +80,15 @@ export default function TenantOAPage(){
    const data=await response.json().catch(()=>({}))
    if(!response.ok||!data.ok)throw new Error(data.error||"อัปเดตสมาชิก OA ไม่สำเร็จ")
    setRows(current=>current.map(row=>row.tenant_key===tenantKey?data.row:row))
+   setExpiryDraft(current=>({...current,[tenantKey]:dateInputValue(data.row?.expires_at)}))
   }catch(caught){setError(caught instanceof Error?caught.message:"อัปเดตสมาชิก OA ไม่สำเร็จ")}
   finally{setWorking("")}
+ }
+
+ async function saveExpiry(row:Tenant){
+  const selected=expiryDraft[row.tenant_key]||""
+  if(!selected){setError("กรุณาเลือกวันหมดอายุ");return}
+  await patchTenant(row.tenant_key,{expiresAt:selected,status:"active"})
  }
 
  const stats=useMemo(()=>({
@@ -118,11 +131,12 @@ export default function TenantOAPage(){
    <section style={{border:"1px solid #ddd",borderRadius:"12px",overflow:"hidden",background:"#fff"}}>
     <div style={{padding:"14px 16px",borderBottom:"1px solid #eee"}}><h2 style={{margin:0}}>รายชื่อสมาชิก OA</h2></div>
     <div style={{overflowX:"auto"}}>
-     <table style={{width:"100%",borderCollapse:"collapse",minWidth:"760px"}}>
+     <table style={{width:"100%",borderCollapse:"collapse",minWidth:"980px"}}>
       <thead><tr>
        <th style={{textAlign:"left",padding:"12px"}}>สมาชิก / OA</th>
        <th style={{textAlign:"left",padding:"12px"}}>Channel ID</th>
-       <th style={{textAlign:"left",padding:"12px"}}>วันหมดอายุ</th>
+       <th style={{textAlign:"left",padding:"12px"}}>วันหมดอายุปัจจุบัน</th>
+       <th style={{textAlign:"left",padding:"12px"}}>เลือกวันหมดอายุใหม่</th>
        <th style={{textAlign:"left",padding:"12px"}}>คงเหลือ</th>
        <th style={{textAlign:"left",padding:"12px"}}>สถานะ</th>
        <th style={{textAlign:"left",padding:"12px"}}>คุม</th>
@@ -136,10 +150,17 @@ export default function TenantOAPage(){
          <td style={{padding:"12px"}}><b>{row.display_name}</b><br/><small>{row.tenant_key}</small></td>
          <td style={{padding:"12px"}}>{row.line_channel_id||"-"}</td>
          <td style={{padding:"12px",fontWeight:700}}>{dateText(row.expires_at)}</td>
+         <td style={{padding:"12px"}}>
+          <input
+           type="date"
+           value={expiryDraft[row.tenant_key]||""}
+           onChange={e=>setExpiryDraft(current=>({...current,[row.tenant_key]:e.target.value}))}
+          />
+         </td>
          <td style={{padding:"12px"}}>{days===null?"ไม่จำกัด":days<0?`หมดแล้ว ${Math.abs(days)} วัน`:`${days} วัน`}</td>
          <td style={{padding:"12px",fontWeight:700}}>{status}</td>
          <td style={{padding:"12px"}}><div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-          <button type="button" disabled={working===row.tenant_key} onClick={()=>void patchTenant(row.tenant_key,{extendDays:30})}>ต่ออายุ +30 วัน</button>
+          <button type="button" disabled={working===row.tenant_key} onClick={()=>void saveExpiry(row)}>{working===row.tenant_key?"กำลังบันทึก...":"ต่ออายุ / บันทึกวัน"}</button>
           {row.status==="locked"
            ?<button type="button" disabled={working===row.tenant_key} onClick={()=>void patchTenant(row.tenant_key,{status:"active"})}>ปลดล็อก</button>
            :<button type="button" disabled={working===row.tenant_key} onClick={()=>void patchTenant(row.tenant_key,{status:"locked"})}>ล็อก</button>}
