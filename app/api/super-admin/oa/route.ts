@@ -29,12 +29,7 @@ function errorInfo(error:unknown){
  if(error instanceof Error)return {message:error.message,code:"",details:"",hint:""}
  if(error&&typeof error==="object"){
   const value=error as SupabaseLikeError
-  return {
-   message:String(value.message||"database_error"),
-   code:String(value.code||""),
-   details:String(value.details||""),
-   hint:String(value.hint||""),
-  }
+  return {message:String(value.message||"database_error"),code:String(value.code||""),details:String(value.details||""),hint:String(value.hint||"")}
  }
  return {message:String(error||"unknown_error"),code:"",details:"",hint:""}
 }
@@ -48,12 +43,15 @@ function jsonError(error:unknown,status=500){
 
 export async function GET(){
  try{
-  console.info("LekHub tenant control project",projectRef())
   const auth=await requireOwner();if("error" in auth)return auth.error
   const supabase=createServerAdminClient()
-  const {data,error}=await supabase.rpc("lekhub_owner_list_tenants",{p_token:auth.session.token})
-  if(error)throw error
-  return NextResponse.json({ok:true,rows:data?.rows||[]},{headers:{"cache-control":"no-store, max-age=0"}})
+  const [tenants,requests]=await Promise.all([
+   supabase.rpc("lekhub_owner_list_tenants",{p_token:auth.session.token}),
+   supabase.rpc("lekhub_owner_list_admin_requests",{p_token:auth.session.token}),
+  ])
+  if(tenants.error)throw tenants.error
+  if(requests.error)throw requests.error
+  return NextResponse.json({ok:true,rows:tenants.data?.rows||[],adminRequests:requests.data?.rows||[]},{headers:{"cache-control":"no-store, max-age=0"}})
  }catch(error){return jsonError(error)}
 }
 
@@ -64,15 +62,12 @@ export async function POST(request:NextRequest){
   const tenantKey=normalizeKey(body.tenantKey)
   const displayName=String(body.displayName||"").trim()
   const lineChannelId=String(body.lineChannelId||"").trim()||null
+  const lineLiffId=String(body.lineLiffId||"").trim()||null
   const expiresAt=body.expiresAt?new Date(String(body.expiresAt)).toISOString():null
   if(!tenantKey||!displayName)return NextResponse.json({ok:false,error:"กรอกชื่อสมาชิก/OA และรหัสผู้เช่าให้ครบ"},{status:400})
-  const supabase=createServerAdminClient()
-  const {data,error}=await supabase.rpc("lekhub_owner_create_tenant",{
-   p_token:auth.session.token,
-   p_tenant_key:tenantKey,
-   p_display_name:displayName,
-   p_line_channel_id:lineChannelId,
-   p_expires_at:expiresAt,
+  const {data,error}=await createServerAdminClient().rpc("lekhub_owner_create_tenant_v2",{
+   p_token:auth.session.token,p_tenant_key:tenantKey,p_display_name:displayName,
+   p_line_channel_id:lineChannelId,p_line_liff_id:lineLiffId,p_expires_at:expiresAt,
   })
   if(error)throw error
   return NextResponse.json({ok:true,row:data?.row},{headers:{"cache-control":"no-store, max-age=0"}})
@@ -85,11 +80,22 @@ export async function PATCH(request:NextRequest){
   const body=await request.json().catch(()=>({}))
   const tenantKey=normalizeKey(body.tenantKey)
   if(!tenantKey)return NextResponse.json({ok:false,error:"ไม่พบรหัสผู้เช่า"},{status:400})
+  const supabase=createServerAdminClient()
+
+  if(body.approveAdminLineUserId!==undefined){
+   const lineUserId=String(body.approveAdminLineUserId||"").trim()
+   if(!lineUserId)return NextResponse.json({ok:false,error:"ไม่พบ LINE user"},{status:400})
+   const {data,error}=await supabase.rpc("lekhub_owner_approve_admin_request",{p_token:auth.session.token,p_tenant_key:tenantKey,p_line_user_id:lineUserId})
+   if(error)throw error
+   return NextResponse.json({ok:true,approved:true,data},{headers:{"cache-control":"no-store, max-age=0"}})
+  }
 
   const patch:Record<string,unknown>={}
   if(body.displayName!==undefined)patch.displayName=String(body.displayName||"").trim()
   if(body.lineChannelId!==undefined)patch.lineChannelId=String(body.lineChannelId||"").trim()
+  if(body.lineLiffId!==undefined)patch.lineLiffId=String(body.lineLiffId||"").trim()
   if(body.expiresAt!==undefined)patch.expiresAt=body.expiresAt?new Date(String(body.expiresAt)).toISOString():null
+  if(body.isolationReady!==undefined)patch.isolationReady=Boolean(body.isolationReady)
   if(body.status!==undefined){
    const status=String(body.status) as TenantStatus
    if(!["active","locked","expired"].includes(status))return NextResponse.json({ok:false,error:"สถานะไม่ถูกต้อง"},{status:400})
@@ -97,12 +103,7 @@ export async function PATCH(request:NextRequest){
   }
   if(body.extendDays!==undefined)patch.extendDays=Math.max(1,Math.min(365,Number(body.extendDays)||30))
 
-  const supabase=createServerAdminClient()
-  const {data,error}=await supabase.rpc("lekhub_owner_update_tenant",{
-   p_token:auth.session.token,
-   p_tenant_key:tenantKey,
-   p_patch:patch,
-  })
+  const {data,error}=await supabase.rpc("lekhub_owner_update_tenant",{p_token:auth.session.token,p_tenant_key:tenantKey,p_patch:patch})
   if(error)throw error
   return NextResponse.json({ok:true,row:data?.row},{headers:{"cache-control":"no-store, max-age=0"}})
  }catch(error){return jsonError(error,400)}
