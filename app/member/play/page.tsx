@@ -27,6 +27,7 @@ export default function PlayPage(){
  const [previousRoundNumber,setPreviousRoundNumber]=useState("")
  const [attachment,setAttachment]=useState<File|null>(null)
  const [attachmentPreview,setAttachmentPreview]=useState("")
+ const [routeReady,setRouteReady]=useState(false)
 
  useEffect(()=>{
   localStorage.removeItem("lekhub_member_name")
@@ -46,10 +47,18 @@ export default function PlayPage(){
      const openingMemberPage=openMemberPageFromLiff()
      if(openingMemberPage)return
      const openingAdmin=await openAdminFromLiff(line)
-     if(!openingAdmin)setMessage("")
+     if(!openingAdmin){
+      setMessage("")
+      setRouteReady(true)
+     }
+    }else{
+     setRouteReady(true)
     }
    })
-   .catch(()=>setMessage("กรุณาเปิดผ่าน LINE OA"))
+   .catch(()=>{
+    setMessage("กรุณาเปิดผ่าน LINE OA")
+    setRouteReady(true)
+   })
   createClient().rpc("get_lekhub_public_status").then(({data})=>{
    if(data&&typeof data==="object"){
     if("is_open" in data)setOpen(Boolean(data.is_open))
@@ -315,6 +324,20 @@ export default function PlayPage(){
  function close(){
   if(liff?.closeWindow) liff.closeWindow()
   else window.location.replace("/member")
+ }
+
+ if(!routeReady){
+  return <main style={{
+   minHeight:"100dvh",
+   display:"grid",
+   placeItems:"center",
+   padding:"24px",
+   boxSizing:"border-box",
+   background:"#ffffff",
+   color:"#111111"
+  }}>
+   <div style={{textAlign:"center",fontWeight:700}}>{message||"กำลังเปิดหน้า..."}</div>
+  </main>
  }
 
  return <main className="play-mobile">
