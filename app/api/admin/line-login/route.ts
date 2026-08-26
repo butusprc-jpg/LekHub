@@ -70,8 +70,14 @@ export async function POST(request: Request) {
 
     return response
   } catch (error) {
-    const code=error instanceof Error?error.message:"admin_login_failed"
-    const status=code.startsWith("line_")||code==="missing_line_access_token"?401:
+    const raw=error instanceof Error?error.message:"admin_login_failed"
+    const lower=raw.toLowerCase()
+    const expired=
+      lower.includes("access token expired")||
+      lower.includes("token expired")||
+      lower.includes("invalid access token")
+    const code=expired?"line_token_invalid":raw
+    const status=expired||code.startsWith("line_")||code==="missing_line_access_token"?401:
       code.includes("tenant_")?403:500
     if(status===500)console.error("LINE admin login failed", error)
     return NextResponse.json({ ok: false, error: code }, { status })

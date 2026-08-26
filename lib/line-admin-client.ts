@@ -42,6 +42,24 @@ export async function ensureLineAdminSession():Promise<ClientAdminSession>{
  })
  const result=await response.json().catch(()=>({}))
  if(!response.ok||!result.ok){
+  const code=String(result?.error||"")
+  const lower=code.toLowerCase()
+  const expired=
+   response.status===401&&(
+    lower.includes("access token expired")||
+    lower.includes("token expired")||
+    lower.includes("invalid access token")||
+    lower==="line_token_invalid"
+   )
+
+  if(expired){
+   // Remove any stale server session before LINE creates a fresh access token.
+   await fetch("/api/admin/logout",{method:"POST",credentials:"same-origin",cache:"no-store"}).catch(()=>{})
+   const redirectUri=window.location.href
+   line.liff.login({redirectUri})
+   throw new Error("กำลังเชื่อม LINE ใหม่ กรุณารอสักครู่")
+  }
+
   if(result.error==="line_user_not_admin")throw new Error("LINE นี้ไม่มีสิทธิ์เข้าหลังบ้าน")
   throw new Error(result.error||"เข้าสู่หลังบ้านไม่สำเร็จ")
  }
