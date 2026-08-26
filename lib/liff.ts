@@ -7,7 +7,6 @@ export type LiffClient = {
   getProfile(): Promise<LineProfile>
   getAccessToken(): string | null
   sendMessages(m: unknown[]): Promise<void>
-  shareTargetPicker?(m: unknown[], options?: { isMultiple?: boolean }): Promise<unknown>
   closeWindow?(): void
 }
 
