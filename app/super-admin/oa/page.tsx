@@ -8,33 +8,25 @@ type Tenant={
  display_name:string
  status:"active"|"locked"|"expired"
  line_channel_id?:string|null
+ line_liff_id?:string|null
+ isolation_ready?:boolean|null
  expires_at?:string|null
- locked_at?:string|null
- created_at?:string|null
- updated_at?:string|null
 }
+type AdminRequest={tenant_key:string;tenant_name?:string;line_user_id:string;display_name:string;requested_at?:string}
 
-function dateText(value?:string|null){
- if(!value)return "ไม่กำหนด"
- return new Intl.DateTimeFormat("th-TH",{timeZone:"Asia/Bangkok",day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(value))
-}
-function dateInputValue(value?:string|null){
- if(!value)return ""
- return value.slice(0,10)
-}
-function remainingDays(value?:string|null){
- if(!value)return null
- return Math.ceil((new Date(value).getTime()-Date.now())/86400000)
-}
+function dateText(value?:string|null){if(!value)return "ไม่กำหนด";return new Intl.DateTimeFormat("th-TH",{timeZone:"Asia/Bangkok",day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(value))}
+function dateInputValue(value?:string|null){return value?value.slice(0,10):""}
+function remainingDays(value?:string|null){return value?Math.ceil((new Date(value).getTime()-Date.now())/86400000):null}
 
 export default function TenantOAPage(){
  const [session,setSession]=useState<ClientAdminSession|null>(null)
  const [rows,setRows]=useState<Tenant[]>([])
+ const [adminRequests,setAdminRequests]=useState<AdminRequest[]>([])
  const [expiryDraft,setExpiryDraft]=useState<Record<string,string>>({})
- const [loading,setLoading]=useState(true)
- const [error,setError]=useState("")
- const [working,setWorking]=useState("")
- const [form,setForm]=useState({tenantKey:"",displayName:"",lineChannelId:"",expiresAt:""})
+ const [channelDraft,setChannelDraft]=useState<Record<string,string>>({})
+ const [liffDraft,setLiffDraft]=useState<Record<string,string>>({})
+ const [loading,setLoading]=useState(true),[error,setError]=useState(""),[working,setWorking]=useState("")
+ const [form,setForm]=useState({tenantKey:"",displayName:"",lineChannelId:"",lineLiffId:"",expiresAt:""})
 
  async function load(){
   setLoading(true);setError("")
@@ -45,133 +37,73 @@ export default function TenantOAPage(){
    const data=await response.json().catch(()=>({}))
    if(!response.ok||!data.ok)throw new Error(data.error||"โหลดสมาชิก OA ไม่สำเร็จ")
    const nextRows:Tenant[]=data.rows||[]
-   setRows(nextRows)
-   setExpiryDraft(Object.fromEntries(nextRows.map(row=>[row.tenant_key,dateInputValue(row.expires_at)])))
+   setRows(nextRows);setAdminRequests(data.adminRequests||[])
+   setExpiryDraft(Object.fromEntries(nextRows.map(r=>[r.tenant_key,dateInputValue(r.expires_at)])))
+   setChannelDraft(Object.fromEntries(nextRows.map(r=>[r.tenant_key,r.line_channel_id||""])))
+   setLiffDraft(Object.fromEntries(nextRows.map(r=>[r.tenant_key,r.line_liff_id||""])))
   }catch(caught){setError(caught instanceof Error?caught.message:"โหลดสมาชิก OA ไม่สำเร็จ")}
   finally{setLoading(false)}
  }
-
  useEffect(()=>{void load()},[])
 
  async function createTenant(e:React.FormEvent){
-  e.preventDefault();if(working)return
-  setWorking("create");setError("")
+  e.preventDefault();if(working)return;setWorking("create");setError("")
   try{
-   const response=await fetch("/api/super-admin/oa",{
-    method:"POST",headers:{"content-type":"application/json"},credentials:"same-origin",
-    body:JSON.stringify(form),
-   })
-   const data=await response.json().catch(()=>({}))
-   if(!response.ok||!data.ok)throw new Error(data.error||"เพิ่มสมาชิก OA ไม่สำเร็จ")
-   setForm({tenantKey:"",displayName:"",lineChannelId:"",expiresAt:""})
-   await load()
-  }catch(caught){setError(caught instanceof Error?caught.message:"เพิ่มสมาชิก OA ไม่สำเร็จ")}
-  finally{setWorking("")}
+   const response=await fetch("/api/super-admin/oa",{method:"POST",headers:{"content-type":"application/json"},credentials:"same-origin",body:JSON.stringify(form)})
+   const data=await response.json().catch(()=>({}));if(!response.ok||!data.ok)throw new Error(data.error||"เพิ่มสมาชิก OA ไม่สำเร็จ")
+   setForm({tenantKey:"",displayName:"",lineChannelId:"",lineLiffId:"",expiresAt:""});await load()
+  }catch(caught){setError(caught instanceof Error?caught.message:"เพิ่มสมาชิก OA ไม่สำเร็จ")}finally{setWorking("")}
  }
 
  async function patchTenant(tenantKey:string,patch:Record<string,unknown>){
-  if(working)return
-  setWorking(tenantKey);setError("")
+  if(working)return;setWorking(tenantKey);setError("")
   try{
-   const response=await fetch("/api/super-admin/oa",{
-    method:"PATCH",headers:{"content-type":"application/json"},credentials:"same-origin",
-    body:JSON.stringify({tenantKey,...patch}),
-   })
-   const data=await response.json().catch(()=>({}))
-   if(!response.ok||!data.ok)throw new Error(data.error||"อัปเดตสมาชิก OA ไม่สำเร็จ")
-   setRows(current=>current.map(row=>row.tenant_key===tenantKey?data.row:row))
-   setExpiryDraft(current=>({...current,[tenantKey]:dateInputValue(data.row?.expires_at)}))
-  }catch(caught){setError(caught instanceof Error?caught.message:"อัปเดตสมาชิก OA ไม่สำเร็จ")}
-  finally{setWorking("")}
+   const response=await fetch("/api/super-admin/oa",{method:"PATCH",headers:{"content-type":"application/json"},credentials:"same-origin",body:JSON.stringify({tenantKey,...patch})})
+   const data=await response.json().catch(()=>({}));if(!response.ok||!data.ok)throw new Error(data.error||"อัปเดตสมาชิก OA ไม่สำเร็จ")
+   await load()
+  }catch(caught){setError(caught instanceof Error?caught.message:"อัปเดตสมาชิก OA ไม่สำเร็จ")}finally{setWorking("")}
  }
 
- async function saveExpiry(row:Tenant){
-  const selected=expiryDraft[row.tenant_key]||""
-  if(!selected){setError("กรุณาเลือกวันหมดอายุ");return}
-  await patchTenant(row.tenant_key,{expiresAt:selected,status:"active"})
+ async function saveConfig(row:Tenant){
+  await patchTenant(row.tenant_key,{lineChannelId:channelDraft[row.tenant_key]||"",lineLiffId:liffDraft[row.tenant_key]||"",expiresAt:expiryDraft[row.tenant_key]||null})
  }
+ async function approve(req:AdminRequest){await patchTenant(req.tenant_key,{approveAdminLineUserId:req.line_user_id})}
 
- const stats=useMemo(()=>({
-  total:rows.length,
-  active:rows.filter(x=>x.status==="active"&&(remainingDays(x.expires_at)??0)>=0).length,
-  locked:rows.filter(x=>x.status==="locked").length,
-  expiring:rows.filter(x=>{const d=remainingDays(x.expires_at);return d!==null&&d>=0&&d<=7}).length,
- }),[rows])
+ const stats=useMemo(()=>({total:rows.length,active:rows.filter(x=>x.status==="active"&&(remainingDays(x.expires_at)??0)>=0).length,ready:rows.filter(x=>x.isolation_ready).length,locked:rows.filter(x=>x.status==="locked").length}),[rows])
 
  return <main className="admin-shell">
-  <aside className="admin-sidebar">
-   <div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>MAIN ADMIN</small></div></div>
-   <div style={{padding:"14px 16px",fontWeight:800}}>คุม OA ผู้เช่า</div>
-  </aside>
-
+  <aside className="admin-sidebar"><div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>MAIN ADMIN</small></div></div><div style={{padding:"14px 16px",fontWeight:800}}>คุม OA ผู้เช่า</div></aside>
   <section className="admin-content">
-   <header className="admin-topbar">
-    <div><small>{session?`แอดมินหลัก • ${session.displayName}`:"กำลังตรวจสิทธิ์"}</small><h1>คุม OA ผู้เช่า</h1></div>
-    <button type="button" onClick={()=>void load()}>รีเฟรช</button>
-   </header>
-
-   {error&&<div className="admin-error">{error}</div>}
-   {loading&&<p>กำลังโหลด...</p>}
-
-   <div className="stat-grid" style={{marginBottom:"20px"}}>
-    <article><small>สมาชิกทั้งหมด</small><b>{stats.total}</b></article>
-    <article><small>ใช้งาน</small><b>{stats.active}</b></article>
-    <article><small>ล็อก</small><b>{stats.locked}</b></article>
-    <article><small>หมดใน 7 วัน</small><b>{stats.expiring}</b></article>
-   </div>
+   <header className="admin-topbar"><div><small>{session?`แอดมินหลัก • ${session.displayName}`:"กำลังตรวจสิทธิ์"}</small><h1>คุม OA ผู้เช่า</h1></div><button type="button" onClick={()=>void load()}>รีเฟรช</button></header>
+   {error&&<div className="admin-error">{error}</div>}{loading&&<p>กำลังโหลด...</p>}
+   <div className="stat-grid" style={{marginBottom:"20px"}}><article><small>OA ทั้งหมด</small><b>{stats.total}</b></article><article><small>ใช้งาน</small><b>{stats.active}</b></article><article><small>พร้อมเช่า</small><b>{stats.ready}</b></article><article><small>ล็อก</small><b>{stats.locked}</b></article></div>
 
    <form onSubmit={createTenant} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:"10px",padding:"16px",border:"1px solid #ddd",borderRadius:"12px",marginBottom:"22px"}}>
-    <input required value={form.displayName} onChange={e=>setForm({...form,displayName:e.target.value})} placeholder="ชื่อสมาชิก / ชื่อ OA" />
-    <input required value={form.tenantKey} onChange={e=>setForm({...form,tenantKey:e.target.value})} placeholder="รหัสผู้เช่า เช่น oa-001" />
-    <input value={form.lineChannelId} onChange={e=>setForm({...form,lineChannelId:e.target.value})} placeholder="LINE Channel ID" />
-    <input type="date" value={form.expiresAt} onChange={e=>setForm({...form,expiresAt:e.target.value})} />
-    <button type="submit" disabled={working==="create"} className="red-action">{working==="create"?"กำลังเพิ่ม...":"+ เพิ่มสมาชิก OA"}</button>
+    <input required value={form.displayName} onChange={e=>setForm({...form,displayName:e.target.value})} placeholder="ชื่อสมาชิก / ชื่อ OA"/>
+    <input required value={form.tenantKey} onChange={e=>setForm({...form,tenantKey:e.target.value})} placeholder="รหัสผู้เช่า เช่น oa-001"/>
+    <input value={form.lineChannelId} onChange={e=>setForm({...form,lineChannelId:e.target.value})} placeholder="LINE Channel ID"/>
+    <input value={form.lineLiffId} onChange={e=>setForm({...form,lineLiffId:e.target.value})} placeholder="LINE LIFF ID"/>
+    <input type="date" value={form.expiresAt} onChange={e=>setForm({...form,expiresAt:e.target.value})}/>
+    <button type="submit" disabled={working==="create"} className="red-action">{working==="create"?"กำลังเพิ่ม...":"+ เพิ่ม OA ผู้เช่า"}</button>
    </form>
 
-   <section style={{border:"1px solid #ddd",borderRadius:"12px",overflow:"hidden",background:"#fff"}}>
-    <div style={{padding:"14px 16px",borderBottom:"1px solid #eee"}}><h2 style={{margin:0}}>รายชื่อสมาชิก OA</h2></div>
-    <div style={{overflowX:"auto"}}>
-     <table style={{width:"100%",borderCollapse:"collapse",minWidth:"980px"}}>
-      <thead><tr>
-       <th style={{textAlign:"left",padding:"12px"}}>สมาชิก / OA</th>
-       <th style={{textAlign:"left",padding:"12px"}}>Channel ID</th>
-       <th style={{textAlign:"left",padding:"12px"}}>วันหมดอายุปัจจุบัน</th>
-       <th style={{textAlign:"left",padding:"12px"}}>เลือกวันหมดอายุใหม่</th>
-       <th style={{textAlign:"left",padding:"12px"}}>คงเหลือ</th>
-       <th style={{textAlign:"left",padding:"12px"}}>สถานะ</th>
-       <th style={{textAlign:"left",padding:"12px"}}>คุม</th>
-      </tr></thead>
-      <tbody>
-       {rows.map(row=>{
-        const days=remainingDays(row.expires_at)
-        const expired=days!==null&&days<0
-        const status=row.status==="locked"?"ล็อก":expired||row.status==="expired"?"หมดอายุ":"ใช้งาน"
-        return <tr key={row.tenant_key} style={{borderTop:"1px solid #eee"}}>
-         <td style={{padding:"12px"}}><b>{row.display_name}</b><br/><small>{row.tenant_key}</small></td>
-         <td style={{padding:"12px"}}>{row.line_channel_id||"-"}</td>
-         <td style={{padding:"12px",fontWeight:700}}>{dateText(row.expires_at)}</td>
-         <td style={{padding:"12px"}}>
-          <input
-           type="date"
-           value={expiryDraft[row.tenant_key]||""}
-           onChange={e=>setExpiryDraft(current=>({...current,[row.tenant_key]:e.target.value}))}
-          />
-         </td>
-         <td style={{padding:"12px"}}>{days===null?"ไม่จำกัด":days<0?`หมดแล้ว ${Math.abs(days)} วัน`:`${days} วัน`}</td>
-         <td style={{padding:"12px",fontWeight:700}}>{status}</td>
-         <td style={{padding:"12px"}}><div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-          <button type="button" disabled={working===row.tenant_key} onClick={()=>void saveExpiry(row)}>{working===row.tenant_key?"กำลังบันทึก...":"ต่ออายุ / บันทึกวัน"}</button>
-          {row.status==="locked"
-           ?<button type="button" disabled={working===row.tenant_key} onClick={()=>void patchTenant(row.tenant_key,{status:"active"})}>ปลดล็อก</button>
-           :<button type="button" disabled={working===row.tenant_key} onClick={()=>void patchTenant(row.tenant_key,{status:"locked"})}>ล็อก</button>}
-         </div></td>
-        </tr>
-       })}
-      </tbody>
-     </table>
-    </div>
-    {!loading&&!rows.length&&!error&&<p style={{padding:"16px"}}>ยังไม่มีสมาชิก OA</p>}
-   </section>
+   {!!adminRequests.length&&<section style={{padding:"16px",border:"1px solid #ddd",borderRadius:"12px",marginBottom:"22px"}}><h2>คำขอแอดมิน OA</h2>{adminRequests.map(req=><div key={`${req.tenant_key}-${req.line_user_id}`} style={{display:"flex",justifyContent:"space-between",gap:"12px",alignItems:"center",padding:"10px 0",borderTop:"1px solid #eee"}}><div><b>{req.display_name}</b><small style={{display:"block"}}>{req.tenant_name||req.tenant_key}</small></div><button type="button" disabled={!!working} onClick={()=>void approve(req)}>อนุมัติแอดมิน</button></div>)}</section>}
+
+   <section style={{border:"1px solid #ddd",borderRadius:"12px",overflow:"hidden",background:"#fff"}}><div style={{padding:"14px 16px",borderBottom:"1px solid #eee"}}><h2 style={{margin:0}}>รายชื่อ OA ผู้เช่า</h2></div><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:"1320px"}}><thead><tr><th style={{padding:12,textAlign:"left"}}>OA</th><th style={{padding:12,textAlign:"left"}}>Channel ID</th><th style={{padding:12,textAlign:"left"}}>LIFF ID</th><th style={{padding:12,textAlign:"left"}}>หมดอายุ</th><th style={{padding:12,textAlign:"left"}}>พร้อมเช่า</th><th style={{padding:12,textAlign:"left"}}>ลิงก์สมาชิก</th><th style={{padding:12,textAlign:"left"}}>คุม</th></tr></thead><tbody>
+    {rows.map(row=>{const days=remainingDays(row.expires_at);const memberUrl=`https://lek-hub.vercel.app/member/play?tenant=${encodeURIComponent(row.tenant_key)}`;return <tr key={row.tenant_key} style={{borderTop:"1px solid #eee"}}>
+     <td style={{padding:12}}><b>{row.display_name}</b><small style={{display:"block"}}>{row.tenant_key} • {row.status}</small></td>
+     <td style={{padding:12}}><input value={channelDraft[row.tenant_key]||""} onChange={e=>setChannelDraft(v=>({...v,[row.tenant_key]:e.target.value}))}/></td>
+     <td style={{padding:12}}><input value={liffDraft[row.tenant_key]||""} onChange={e=>setLiffDraft(v=>({...v,[row.tenant_key]:e.target.value}))}/></td>
+     <td style={{padding:12}}><input type="date" value={expiryDraft[row.tenant_key]||""} onChange={e=>setExpiryDraft(v=>({...v,[row.tenant_key]:e.target.value}))}/><small style={{display:"block"}}>{dateText(row.expires_at)}{days!==null?` • ${days<0?"หมดแล้ว":`${days} วัน`}`:""}</small></td>
+     <td style={{padding:12,fontWeight:800}}>{row.isolation_ready?"พร้อม":"ยังไม่พร้อม"}</td>
+     <td style={{padding:12,maxWidth:300,wordBreak:"break-all"}}>{row.isolation_ready?memberUrl:"ตั้ง Channel + LIFF แล้วเปิดใช้งานก่อน"}</td>
+     <td style={{padding:12}}><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+      <button type="button" disabled={working===row.tenant_key} onClick={()=>void saveConfig(row)}>บันทึกค่า</button>
+      <button type="button" disabled={working===row.tenant_key} onClick={()=>void patchTenant(row.tenant_key,{isolationReady:!row.isolation_ready,lineChannelId:channelDraft[row.tenant_key]||"",lineLiffId:liffDraft[row.tenant_key]||""})}>{row.isolation_ready?"พักการเช่า":"เปิดใช้งานเช่า"}</button>
+      {row.status==="locked"?<button type="button" onClick={()=>void patchTenant(row.tenant_key,{status:"active"})}>ปลดล็อก</button>:<button type="button" onClick={()=>void patchTenant(row.tenant_key,{status:"locked"})}>ล็อก</button>}
+     </div></td>
+    </tr>})}
+   </tbody></table></div>{!loading&&!rows.length&&!error&&<p style={{padding:16}}>ยังไม่มี OA ผู้เช่า</p>}</section>
   </section>
  </main>
 }
