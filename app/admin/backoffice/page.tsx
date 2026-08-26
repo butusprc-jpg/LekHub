@@ -3,12 +3,14 @@
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { adminRpc, ensureLineAdminSession, type ClientAdminSession } from "../../../lib/line-admin-client"
+import { initLIFF, type LiffClient } from "../../../lib/liff"
 
 type ReportItem={id:number;value:string;category_label:string;heart:number;cash?:boolean}
 type Report={id:string;reference_code:string;member_name:string;item_count:number;total:number;imported_at:string;submitted_at?:string|null;attachment_url?:string|null;round_date?:string|null;items:ReportItem[]}
 type ItemView=ReportItem&{imported_at:string;submitted_at?:string|null;round_date?:string|null}
 type MemberGroup={name:string;items:ItemView[];total:number;images:string[];rounds:string[]}
 type DateGroup={dateKey:string;dateLabel:string;members:MemberGroup[];total:number}
+type ShareTargetPickerCapable={shareTargetPicker?: (messages:Array<{type:"text";text:string}>,options?:{isMultiple?:boolean})=>Promise<unknown>}
 
 function dateKey(value:string){return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Bangkok",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(value))}
 function dateLabel(value:string){return new Intl.DateTimeFormat("th-TH",{timeZone:"Asia/Bangkok",day:"numeric",month:"long",year:"numeric"}).format(new Date(value))}
@@ -155,17 +157,49 @@ export default function BackofficePage(){
   const suffix=exportType==="self"?"เก็บเอง":exportType==="office"?"ส่งสำนักงาน":"วิเคราะห์"
   a.href=url;a.download=`LekHub-${suffix}-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(url)
  }
- async function shareReport(){
+
+ function shareText(){
   const suffix=exportType==="self"?"เก็บเอง":exportType==="office"?"ส่งสำนักงาน":"วิเคราะห์"
-  const file=new File([csvText(exportType)],`LekHub-${suffix}-${new Date().toISOString().slice(0,10)}.csv`,{type:"text/csv"})
-  if(navigator.share){
-   try{
-    if(navigator.canShare?.({files:[file]}))await navigator.share({title:`ตารางกิจกรรม LekHub - ${suffix}`,files:[file]})
-    else await navigator.share({title:`ตารางกิจกรรม LekHub - ${suffix}`,text:`ตารางกิจกรรม LekHub - ${suffix}`})
+  const raw=csvText(exportType).replace(/^\ufeff/,"")
+  return `ตารางกิจกรรม LekHub - ${suffix}\n${raw}`
+ }
+
+ async function shareReport(){
+  setError("")
+  const text=shareText()
+  try{
+   const line=await initLIFF().catch(()=>null)
+   const liffWithShare=(line?.liff as (LiffClient&ShareTargetPickerCapable)|undefined)
+   if(liffWithShare?.shareTargetPicker){
+    const chunks:string[]=[]
+    let remaining=text
+    while(remaining.length&&chunks.length<5){
+     if(remaining.length<=4500){chunks.push(remaining);break}
+     let cut=remaining.lastIndexOf("\n",4500)
+     if(cut<1000)cut=4500
+     chunks.push(remaining.slice(0,cut))
+     remaining=remaining.slice(cut).replace(/^\n/,"")
+    }
+    if(remaining.length&&chunks.length===5){
+     chunks[4]=chunks[4].slice(0,4300)+"\n…รายงานยาวเกินขีดจำกัด LINE กรุณาใช้ปุ่มส่งออกรายงานเมื่อเปิดด้วย Chrome/Safari"
+    }
+    await liffWithShare.shareTargetPicker(chunks.map(chunk=>({type:"text",text:chunk})),{isMultiple:true})
     return
-   }catch{}
+   }
+   if(typeof navigator.share==="function"){
+    await navigator.share({title:"ตารางกิจกรรม LekHub",text:text.slice(0,12000)})
+    return
+   }
+   if(navigator.clipboard?.writeText){
+    await navigator.clipboard.writeText(text)
+    window.alert("คัดลอกรายงานแล้ว สามารถวางใน LINE ได้เลย")
+    return
+   }
+   throw new Error("อุปกรณ์นี้ไม่รองรับการแชร์")
+  }catch(caught){
+   if(caught instanceof DOMException&&caught.name==="AbortError")return
+   setError(`แชร์ไม่สำเร็จ: ${caught instanceof Error?caught.message:"unknown"}`)
   }
-  exportReport()
  }
 
  return <main className="admin-shell">
