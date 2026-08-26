@@ -63,8 +63,25 @@ export default function PlayPage(){
  },[])
 
 
+ function getLiffRouteParams(){
+  const direct=new URLSearchParams(window.location.search)
+  const rawState=direct.get("liff.state")
+  if(!rawState)return direct
+
+  let state=rawState
+  try{state=decodeURIComponent(rawState)}catch{}
+
+  const question=state.indexOf("?")
+  const stateQuery=question>=0?state.slice(question+1):state.startsWith("?")?state.slice(1):state
+  const merged=new URLSearchParams(stateQuery)
+  direct.forEach((value,key)=>{
+   if(key!=="liff.state"&&!merged.has(key))merged.set(key,value)
+  })
+  return merged
+ }
+
  function openMemberPageFromLiff(){
-  const params=new URLSearchParams(window.location.search)
+  const params=getLiffRouteParams()
   const pageTarget=params.get("page")
   if(pageTarget!=="report")return false
   window.location.replace("/report")
@@ -72,7 +89,7 @@ export default function PlayPage(){
  }
 
  async function openAdminFromLiff(line:{liff:LiffClient;profile:LineProfile}){
-  const params=new URLSearchParams(window.location.search)
+  const params=getLiffRouteParams()
   const adminTarget=params.get("admin")
   if(!adminTarget)return false
 
