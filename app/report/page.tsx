@@ -131,7 +131,7 @@ export default function Report(){
   setError("")
   try{
    const line=await initLIFF().catch(()=>null)
-   const liffWithShare=line?.liff as (typeof line.liff & ShareTargetPickerCapable)|undefined
+   const liffWithShare=line?.liff as ShareTargetPickerCapable|undefined
    if(liffWithShare?.shareTargetPicker){
     await liffWithShare.shareTargetPicker([{type:"text",text}],{isMultiple:true})
     return
