@@ -22,6 +22,7 @@ export default function AdminPage(){
  const pending=rows.filter(x=>x.status==="pending").length
  const reviewed=rows.filter(x=>x.status==="reviewed").length
  const imported=rows.filter(x=>x.imported_at).length
+ const isOwner=session?.role==="owner"||session?.role==="super_admin"
 
  return <main className="admin-shell">
   <aside className="admin-sidebar">
@@ -32,6 +33,7 @@ export default function AdminPage(){
     <Link href="/admin/members">สมาชิก</Link>
     <Link href="/admin/backoffice">รายงานหลังบ้าน</Link>
     <Link href="/admin/settings">ตั้งค่าระบบ</Link>
+    {isOwner&&<Link href="/super-admin/oa">คุม OA ผู้เช่า</Link>}
    </nav>
   </aside>
   <section className="admin-content">
