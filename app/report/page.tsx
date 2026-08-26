@@ -29,7 +29,6 @@ function dateTime(value:string){
  }).format(new Date(value))
 }
 
-
 function roundLabel(value?:string|null){
  if(!value)return ""
  const [y,m,d]=value.slice(0,10).split("-").map(Number)
@@ -86,7 +85,6 @@ export default function Report(){
   }finally{setLoading(false)}
  })()},[])
 
-
  async function saveNote(){
   if(!lineUserId||noteSaving)return
   setNoteSaving(true);setNoteMessage("");setError("")
@@ -101,6 +99,55 @@ export default function Report(){
   finally{setNoteSaving(false)}
  }
 
+ function reportText(row:Row){
+  const lines=[
+   "รายงาน LekHub",
+   `เลขอ้างอิง: ${row.reference_code}`,
+   `วันที่: ${dateTime(row.created_at)}`,
+  ]
+  if(row.round_date)lines.push(`รอบวันที่: ${roundLabel(row.round_date)}`)
+  lines.push("")
+  for(const item of row.items){
+   lines.push(`${item.value} | ${item.category_label}${item.cash?" สด":""} | ${Number(item.heart).toLocaleString()}`)
+  }
+  lines.push("")
+  lines.push(`${row.item_count} รายการ | รวม ${Number(row.total).toLocaleString()}`)
+  if(Number(row.reward_total||0)>0){
+   lines.push(`ยอดรางวัลรวม ${Number(row.reward_total||0).toLocaleString()}`)
+  }
+  if(note.trim()){
+   lines.push("")
+   lines.push(`ข้อความสมาชิก: ${note.trim()}`)
+  }
+  return lines.join("\n")
+ }
+
+ async function shareReport(row:Row){
+  const text=reportText(row)
+  try{
+   if(typeof navigator.share==="function"){
+    await navigator.share({title:`LekHub ${row.reference_code}`,text})
+    return
+   }
+   if(navigator.clipboard?.writeText){
+    await navigator.clipboard.writeText(text)
+    window.alert("คัดลอกรายงานแล้ว สามารถนำไปวางใน LINE ได้เลย")
+    return
+   }
+   const area=document.createElement("textarea")
+   area.value=text
+   area.style.position="fixed"
+   area.style.opacity="0"
+   document.body.appendChild(area)
+   area.focus();area.select()
+   document.execCommand("copy")
+   area.remove()
+   window.alert("คัดลอกรายงานแล้ว สามารถนำไปวางใน LINE ได้เลย")
+  }catch(caught){
+   if(caught instanceof DOMException&&caught.name==="AbortError")return
+   setError("แชร์รายงานไม่สำเร็จ กรุณาลองใหม่")
+  }
+ }
 
  return <main className="member-shell">
   <header className="member-header">
@@ -160,6 +207,7 @@ export default function Report(){
     <div style={{textAlign:"right",fontWeight:800,marginTop:"8px"}}>ยอดรางวัลรวม {Number(row.reward_total||0).toLocaleString()}</div>
    </div>}
 
+   <button type="button" onClick={()=>shareReport(row)} style={{width:"100%",marginTop:"12px"}}>แชร์รายงาน</button>
   </section>)}
  </main>
 }
