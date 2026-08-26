@@ -14,6 +14,15 @@ const ALLOWED=new Map([
 export async function POST(request:Request){
  try{
   const member=await verifyLineMember(bearerToken(request))
+  const supabase=createServerAdminClient()
+  const tenantResult=await supabase.rpc("lekhub_tenant_from_channel",{
+   p_channel_id:member.channelId,
+   p_require_ready:true,
+  })
+  if(tenantResult.error)throw tenantResult.error
+  const tenantKey=String(tenantResult.data||"").trim()
+  if(!tenantKey)throw new Error("tenant_channel_not_found")
+
   const form=await request.formData()
   const value=form.get("file")
   if(!(value instanceof File)){
@@ -27,8 +36,7 @@ export async function POST(request:Request){
    return NextResponse.json({ok:false,error:"unsupported_file_type"},{status:415})
   }
 
-  const path=`${member.userId}/${Date.now()}-${crypto.randomUUID()}.${ext}`
-  const supabase=createServerAdminClient()
+  const path=`${tenantKey}/${member.userId}/${Date.now()}-${crypto.randomUUID()}.${ext}`
   const bytes=new Uint8Array(await value.arrayBuffer())
   const {error}=await supabase.storage.from("lekhub-uploads").upload(path,bytes,{
    contentType:value.type,
@@ -46,7 +54,8 @@ export async function POST(request:Request){
   )
  }catch(error){
   const code=error instanceof Error?error.message:"member_upload_failed"
-  const status=code.startsWith("line_")||code==="missing_line_access_token"?401:500
+  const status=code.startsWith("line_")||code==="missing_line_access_token"?401:
+   code.includes("tenant_")?403:500
   return NextResponse.json({ok:false,error:code},{status,headers:{"cache-control":"no-store, max-age=0"}})
  }
 }
