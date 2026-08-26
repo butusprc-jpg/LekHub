@@ -15,6 +15,14 @@ export default async function Home({ searchParams }: HomeProps) {
   const liffState = first(params["liff.state"])
   const adminTarget = first(params.admin)
 
+  if (
+    adminTarget === "settings" ||
+    liffState.includes("admin=settings") ||
+    liffState.includes("/admin/settings")
+  ) {
+    redirect("/admin/settings-entry")
+  }
+
   // LIFF secondary redirects arrive at the Endpoint URL with the intended
   // destination encoded in liff.state. Route backoffice requests directly
   // instead of dropping the state and falling through to /member/play.
