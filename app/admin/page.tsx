@@ -47,7 +47,6 @@ export default function AdminPage(){
       <Link href="/admin/backoffice">📊 ตารางกิจกรรม</Link>
      </div>
     </div>
-    <img src="/lekhub-dashboard-2d.webp" alt="ภาพประกอบแดชบอร์ด LekHub"/>
    </section>
    <div className="stat-grid stat-grid-2d">
     <Link href="/admin/reports" style={{textDecoration:"none",color:"inherit"}}>
