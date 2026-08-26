@@ -138,10 +138,13 @@ export default function PlayPage(){
    body:JSON.stringify({accessToken}),
   })
   const result=await response.json().catch(()=>({}))
-  if(!response.ok||!result.ok){
+  if(!response.ok||!result.ok||!result.sessionToken){
    setMessage(result.error==="line_user_not_admin"?"LINE นี้ไม่มีสิทธิ์เข้าหลังบ้าน":`เข้าหลังบ้านไม่สำเร็จ: ${result.error||"unknown"}`)
    return true
   }
+
+  // Do not rely on embedded-browser cookies. Persist the bearer session client-side.
+  localStorage.setItem("lekhub_line_admin_token",String(result.sessionToken))
 
   const focus=params.get("focus")
   const next=
@@ -215,6 +218,16 @@ export default function PlayPage(){
   setReviewing(true)
  }
 
+ function fallbackUserId(){
+  const key="lekhub_web_user_id"
+  let id=localStorage.getItem(key)
+  if(!id){
+   id=`web-${crypto.randomUUID()}`
+   localStorage.setItem(key,id)
+  }
+  return id
+ }
+
  async function submit(){
   if(!items.length||sending)return
   if(cash&&!attachment){setMessage("เลือกสดต้องแนบภาพก่อนส่ง");setReviewing(false);return}
@@ -222,48 +235,37 @@ export default function PlayPage(){
   setSending(true)
   setMessage("กำลังบันทึก...")
   const activeLiff=liff
-  const accessToken=liff?.getAccessToken?.()||""
-  if(!profile||!accessToken){
-   setMessage("กรุณาเปิดผ่าน LINE OA แล้วลองใหม่")
-   setSending(false)
-   return
-  }
+  const memberName=profile?.displayName||"สมาชิก"
+  const memberUserId=profile?.userId||fallbackUserId()
+  const code=`SL-${Date.now().toString(36).toUpperCase()}`
   let attachmentUrl:string|null=null
 
   if(attachment){
-   const form=new FormData()
-   form.set("file",attachment)
-   const uploadResponse=await fetch("/api/member/upload",{
-    method:"POST",
-    headers:{Authorization:`Bearer ${accessToken}`},
-    cache:"no-store",
-    body:form,
+   const ext=(attachment.name.split(".").pop()||"jpg").toLowerCase()
+   const safeExt=["jpg","jpeg","png","webp"].includes(ext)?ext:"jpg"
+   const path=`${memberUserId}/${Date.now()}-${crypto.randomUUID()}.${safeExt}`
+   const supabase=createClient()
+   const {error:uploadError}=await supabase.storage.from("lekhub-uploads").upload(path,attachment,{
+    cacheControl:"3600",
+    upsert:false,
+    contentType:attachment.type||"image/jpeg",
    })
-   const uploadResult=await uploadResponse.json().catch(()=>({}))
-   if(!uploadResponse.ok||!uploadResult?.ok||!uploadResult?.url){
-    const reason=String(uploadResult?.error||"upload_failed")
-    setMessage(reason==="file_too_large"?"ไฟล์ภาพใหญ่เกิน 5MB":reason==="unsupported_file_type"?"รองรับเฉพาะ JPG, PNG, WEBP":"อัพโหลดภาพไม่สำเร็จ")
+   if(uploadError){
+    setMessage(`อัพโหลดภาพไม่สำเร็จ: ${uploadError.message}`)
     setSending(false)
     return
    }
-   attachmentUrl=String(uploadResult.url)
+   attachmentUrl=supabase.storage.from("lekhub-uploads").getPublicUrl(path).data.publicUrl
   }
 
-  const submitResponse=await fetch("/api/member/submit",{
-   method:"POST",
-   headers:{
-    "content-type":"application/json",
-    Authorization:`Bearer ${accessToken}`,
-   },
-   cache:"no-store",
-   body:JSON.stringify({
-    items:items.map(x=>({...x,cash})),
-    attachmentUrl,
-   }),
+  const {data,error}=await createClient().rpc("submit_lekhub_submission",{
+   p_reference_code:code,
+   p_line_user_id:memberUserId,
+   p_member_name:memberName,
+   p_member_avatar:profile?.pictureUrl||null,
+   p_items:items.map(x=>({...x,category:(x.category==="3front"||x.category==="3back")?"3top":x.category,cash})),
+   p_attachment_url:attachmentUrl
   })
-  const submitResult=await submitResponse.json().catch(()=>({}))
-  const data=submitResult?.data
-  const error=!submitResponse.ok?{message:String(submitResult?.error||"submit_failed")}:null
 
   if(error||!data?.success){
    const raw=String(error?.message||data?.reason||"")
@@ -282,7 +284,7 @@ export default function PlayPage(){
    try{
     await activeLiff.sendMessages([{
     type:"flex",
-    altText:`รายการใหม่ ${data.reference_code||"รายการใหม่"} รวม ${total}`,
+    altText:`รายการใหม่ ${code} รวม ${total}`,
     contents:{
      type:"bubble",
      header:{type:"box",layout:"horizontal",backgroundColor:"#B90000",paddingAll:"16px",contents:[
@@ -291,7 +293,7 @@ export default function PlayPage(){
      ]},
      body:{type:"box",layout:"vertical",contents:[
       {type:"text",text:`สมาชิก  ${profile.displayName}`,weight:"bold"},
-      {type:"text",text:`รหัส  ${data.reference_code||"-"}`,margin:"md"},
+      {type:"text",text:`รหัส  ${data.reference_code||code}`,margin:"md"},
       {type:"separator",margin:"lg"},
       ...items.map(x=>({type:"box",layout:"horizontal",paddingAll:"10px",contents:[
        {type:"text",text:x.value,weight:"bold",size:"xl",flex:2},
@@ -315,7 +317,7 @@ export default function PlayPage(){
   setAttachment(null)
   setAttachmentPreview("")
   setReviewing(false)
-  setMessage(`ส่งเรียบร้อย รหัส ${data.reference_code||"-"}`)
+  setMessage(`ส่งเรียบร้อย รหัส ${data.reference_code||code}`)
   setSending(false)
  }
 

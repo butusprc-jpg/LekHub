@@ -149,8 +149,7 @@ export default function SettingsPage(){
      fetch("/api/admin/reward-notify",{
       method:"POST",
       headers:{"content-type":"application/json"},
-      credentials:"same-origin",
-      body:JSON.stringify({roundDate:info.round_date,prizeNumber:info.prize_number,winners:info.winners}),
+      body:JSON.stringify({adminToken:session.token,roundDate:info.round_date,prizeNumber:info.prize_number,winners:info.winners}),
      }).catch(()=>{})
     }
    }

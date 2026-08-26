@@ -30,8 +30,8 @@ const CATEGORY_KEY:Record<string,string>={
  "2 ล่าง":"bottom",
 }
 function categoryRank(label:string){
- const index=CATEGORY_ORDER.indexOf(label as typeof CATEGORY_ORDER[number])
- return index<0?999:index
+ const i=CATEGORY_ORDER.indexOf(label as typeof CATEGORY_ORDER[number])
+ return i<0?999:i
 }
 function timeOnly(value:string){
  return new Intl.DateTimeFormat("th-TH",{timeZone:"Asia/Bangkok",hour:"2-digit",minute:"2-digit"}).format(new Date(value))
@@ -49,13 +49,13 @@ export default function BackofficePage(){
   setLoading(true);setError("")
   try{
    const current=await ensureLineAdminSession();setSession(current)
-   const [reportsResult,settingsResult]=await Promise.all([
+   const [reportResult,settingsResult]=await Promise.all([
     adminRpc(current,"lekhub_line_admin_list_backoffice_reports",{p_limit:500}),
-    adminRpc(current,"lekhub_line_admin_get_settings",{}),
+    adminRpc(current,"lekhub_line_admin_get_settings"),
    ])
-   if(reportsResult.error)throw new Error(reportsResult.error.message)
+   if(reportResult.error)throw new Error(reportResult.error.message)
    if(settingsResult.error)throw new Error(settingsResult.error.message)
-   setRows((reportsResult.data||[]) as Report[])
+   setRows((reportResult.data||[]) as Report[])
    const raw=settingsResult.data?.category_amounts||{}
    setMultipliers(Object.fromEntries(Object.entries(raw).map(([key,value])=>[key,Number(value)||0])))
   }catch(caught){setError(caught instanceof Error?caught.message:"โหลดตารางกิจกรรมไม่สำเร็จ")}
@@ -65,8 +65,8 @@ export default function BackofficePage(){
  useEffect(()=>{load()},[])
  useEffect(()=>{
   if(!session)return
-  fetch("/api/admin/cleanup-uploads",{
-   method:"POST",credentials:"same-origin",cache:"no-store"
+  fetch("https://uhpgnwclyzjnmnbrnglb.supabase.co/functions/v1/lekhub-cleanup-uploads",{
+   method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({adminToken:session.token})
   }).catch(()=>{})
  },[session])
 
@@ -88,27 +88,19 @@ export default function BackofficePage(){
   return [...map.entries()].sort(([a],[b])=>b.localeCompare(a)).map(([dateKey,g])=>({dateKey,dateLabel:g.label,members:[...g.members.values()],total:g.total}))
  },[rows])
 
- const officeItems=useMemo(()=>groups
-  .flatMap(g=>g.members.flatMap(m=>m.items))
-  .sort((a,b)=>{
-   const categoryDiff=categoryRank(a.category_label)-categoryRank(b.category_label)
-   if(categoryDiff)return categoryDiff
-   const valueDiff=String(a.value).localeCompare(String(b.value),"th",{numeric:true})
-   if(valueDiff)return valueDiff
-   return new Date(a.submitted_at||a.imported_at).getTime()-new Date(b.submitted_at||b.imported_at).getTime()
-  }),[groups])
+ const officeItems=useMemo(()=>groups.flatMap(g=>g.members.flatMap(m=>m.items)).sort((a,b)=>{
+  const categoryDiff=categoryRank(a.category_label)-categoryRank(b.category_label)
+  if(categoryDiff)return categoryDiff
+  const valueDiff=String(a.value).localeCompare(String(b.value),"th",{numeric:true})
+  if(valueDiff)return valueDiff
+  return new Date(a.submitted_at||a.imported_at).getTime()-new Date(b.submitted_at||b.imported_at).getTime()
+ }),[groups])
 
  const analysisItems=useMemo(()=>{
   const map=new Map<string,{value:string;category_label:string;amount:number;multiplier:number;reward:number}>()
   for(const item of groups.flatMap(g=>g.members.flatMap(m=>m.items))){
-   const key=`${item.value}|${item.category_label}`
-   const current=map.get(key)||{
-    value:item.value,
-    category_label:item.category_label,
-    amount:0,
-    multiplier:Number(multipliers[CATEGORY_KEY[item.category_label]]||0),
-    reward:0,
-   }
+   const key=`${item.category_label}|${item.value}`
+   const current=map.get(key)||{value:item.value,category_label:item.category_label,amount:0,multiplier:Number(multipliers[CATEGORY_KEY[item.category_label]]||0),reward:0}
    current.amount+=Number(item.heart)||0
    current.reward=(current.amount/10)*current.multiplier
    map.set(key,current)
@@ -124,7 +116,7 @@ export default function BackofficePage(){
   if(type==="office"){
    const lines=[["รอบเล่น","วันที่ส่ง","เลขที่เลือก","ประเภท","ยอด"].join(",")]
    let grand=0
-   for(const g of groups)for(const m of g.members)m.items.forEach(item=>{
+   for(const item of officeItems){
     const amount=Number(item.heart)||0
     grand+=amount
     const cells=[
@@ -135,7 +127,7 @@ export default function BackofficePage(){
      String(amount),
     ]
     lines.push(cells.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","))
-   })
+   }
    lines.push(`"รวมยอดทั้งหมด","","","","${grand}"`)
    return "\ufeff"+lines.join("\n")
   }
@@ -226,7 +218,7 @@ export default function BackofficePage(){
       <th style={{textAlign:"right",padding:"10px"}}>รางวัล</th>
      </tr></thead>
      <tbody>
-      {analysisItems.map((item,index)=><tr key={`${item.value}-${item.category_label}-${index}`}>
+      {analysisItems.map((item,index)=><tr key={`${item.category_label}-${item.value}-${index}`}>
        <td style={{padding:"10px",fontWeight:700}}>{item.value}</td>
        <td style={{padding:"10px"}}>{item.category_label}</td>
        <td style={{padding:"10px",textAlign:"right",fontWeight:700}}>{item.amount.toLocaleString()}</td>
@@ -234,7 +226,6 @@ export default function BackofficePage(){
       </tr>)}
      </tbody>
     </table>
-    <small style={{display:"block",marginTop:"8px"}}>สูตรรางวัล = (ยอด ÷ 10) × ค่ายอดประเภทที่ตั้งไว้</small>
    </section>}
 
    {exportType==="self"&&groups.map(group=><section key={group.dateKey} style={{marginBottom:"28px"}}>
