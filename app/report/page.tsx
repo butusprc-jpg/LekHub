@@ -20,8 +20,6 @@ type Row={
  items:ReportItem[]
 }
 
-type ShareTargetPickerCapable={shareTargetPicker?: (messages:unknown[],options?:{isMultiple?:boolean})=>Promise<unknown>}
-
 function dateTime(value:string){
  return new Intl.DateTimeFormat("th-TH",{timeZone:"Asia/Bangkok",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(value))
 }
@@ -74,31 +72,6 @@ export default function Report(){
   finally{setNoteSaving(false)}
  }
 
- function reportText(row:Row){
-  const lines=["รายงาน LekHub",`เลขอ้างอิง: ${row.reference_code}`,`วันที่: ${dateTime(row.created_at)}`]
-  if(row.round_date)lines.push(`รอบวันที่: ${roundLabel(row.round_date)}`)
-  lines.push("")
-  for(const item of row.items)lines.push(`${item.value} | ${item.category_label}${item.cash?" สด":""} | ${Number(item.heart).toLocaleString()}`)
-  lines.push("");lines.push(`${row.item_count} รายการ | รวม ${Number(row.total).toLocaleString()}`)
-  if(Number(row.reward_total||0)>0)lines.push(`ยอดรางวัลรวม ${Number(row.reward_total||0).toLocaleString()}`)
-  if(note.trim()){lines.push("");lines.push(`ข้อความสมาชิก: ${note.trim()}`)}
-  return lines.join("\n")
- }
-
- async function shareReport(row:Row){
-  const text=reportText(row);setError("")
-  try{
-   const line=await initLIFF().catch(()=>null)
-   const liffWithShare=line?.liff as ShareTargetPickerCapable|undefined
-   if(liffWithShare?.shareTargetPicker){await liffWithShare.shareTargetPicker([{type:"text",text}],{isMultiple:true});return}
-   if(typeof navigator.share==="function"){await navigator.share({title:`LekHub ${row.reference_code}`,text});return}
-   if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(text);window.alert("คัดลอกรายงานแล้ว สามารถนำไปวางใน LINE ได้เลย");return}
-   const area=document.createElement("textarea");area.value=text;area.style.position="fixed";area.style.opacity="0";document.body.appendChild(area);area.focus();area.select();document.execCommand("copy");area.remove();window.alert("คัดลอกรายงานแล้ว สามารถนำไปวางใน LINE ได้เลย")
-  }catch(caught){
-   if(caught instanceof DOMException&&caught.name==="AbortError")return
-   const message=caught instanceof Error?caught.message:"share_failed";setError(`แชร์รายงานไม่สำเร็จ: ${message}`)
-  }
- }
 
  return <main className="member-shell">
   <header className="member-header"><Link href="/member" className="back-link">‹</Link><div><small>LEKHUB MEMBER</small><h1>รายงาน</h1></div></header>
@@ -117,7 +90,6 @@ export default function Report(){
    {row.items.map((item,index)=><div key={`${item.id}-${index}`} style={{display:"grid",gridTemplateColumns:"1fr 1.4fr 1fr",gap:"10px",padding:"7px 0"}}><b>{item.value}</b><b>{item.category_label}{item.cash?" สด":""}</b><b style={{textAlign:"right"}}>{Number(item.heart).toLocaleString()}</b></div>)}
    <div style={{display:"flex",justifyContent:"space-between",borderTop:"1px solid #ddd",paddingTop:"10px",marginTop:"6px"}}><b>{row.item_count} รายการ</b><strong>รวม {Number(row.total).toLocaleString()}</strong></div>
    {!!Number(row.reward_total||0)&&<div style={{marginTop:"12px",padding:"12px",border:"1px solid #ddd",borderRadius:"10px"}}><b>ถูกรางวัลกิจกรรม</b>{(row.rewards||[]).map((reward,index)=><div key={index} style={{display:"grid",gridTemplateColumns:"1fr 1.2fr 1fr",gap:"8px",paddingTop:"6px"}}><span>{reward.selected_value} {reward.category_label}</span><span>{Number(reward.stake).toLocaleString()} × {Number(reward.multiplier).toLocaleString()}</span><strong style={{textAlign:"right"}}>{Number(reward.reward_amount).toLocaleString()}</strong></div>)}<div style={{textAlign:"right",fontWeight:800,marginTop:"8px"}}>ยอดรางวัลรวม {Number(row.reward_total||0).toLocaleString()}</div></div>}
-   <button type="button" onClick={()=>shareReport(row)} style={{width:"100%",marginTop:"12px"}}>แชร์รายงาน</button>
   </section>)}
  </main>
 }

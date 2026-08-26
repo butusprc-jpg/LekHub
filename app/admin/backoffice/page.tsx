@@ -123,6 +123,19 @@ export default function BackofficePage(){
   })
  },[groups,multipliers])
 
+ const topNumbers=useMemo(()=>[...analysisItems].sort((a,b)=>b.amount-a.amount||categoryRank(a.category_label)-categoryRank(b.category_label)||String(a.value).localeCompare(String(b.value),"th",{numeric:true})).slice(0,20),[analysisItems])
+
+ const officeDisplayItems=useMemo(()=>{
+  let previousDay=""
+  return officeItems.map(item=>{
+   const sent=item.submitted_at||item.imported_at
+   const day=dateKey(sent)
+   const firstOfDay=day!==previousDay
+   previousDay=day
+   return {...item,showDay:firstOfDay,sentDayLabel:dateLabel(sent)}
+  })
+ },[officeItems])
+
  function csvText(type:"self"|"office"|"analysis"=exportType){
   if(type==="office"){
    const lines=[["รอบเล่น","วันที่ส่ง","เลขที่เลือก","ประเภท","ยอด"].join(",")]
@@ -221,10 +234,10 @@ export default function BackofficePage(){
  return <main className="admin-shell">
   <aside className="admin-sidebar">
    <div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>OA BACKOFFICE</small></div></div>
-   <nav><Link href="/admin">ภาพรวม</Link><Link href="/admin/reports">กล่องรับ</Link><Link className="active" href="/admin/backoffice">ตารางกิจกรรม</Link><Link href="/admin/settings">ตั้งค่าระบบ</Link></nav>
+   <nav><Link href="/admin">สรุป</Link><Link href="/admin/reports">รับเข้า</Link><Link className="active" href="/admin/backoffice">ตารางกิจกรรม</Link><Link href="/admin/settings">ตั้งค่าระบบ</Link></nav>
   </aside>
   <section className="admin-content">
-   <header className="admin-topbar"><div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>ตารางกิจกรรม</h1></div></header>
+   <header className="admin-topbar"><div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>ตารางกิจกรรม</h1></div></header><section className="page-banner-2d"><span>📊</span><div><h2>ตารางกิจกรรม</h2><p>สรุปยอด เลขยอดสูงสุด และส่งออกรายงาน</p></div></section>
    {loading&&<p>กำลังโหลด...</p>}
    {error&&<div className="admin-error">{error}<br/><button type="button" onClick={load}>ลองใหม่</button></div>}
    <div style={{display:"flex",gap:"10px",flexWrap:"wrap",marginBottom:"18px",alignItems:"center"}}>
@@ -248,9 +261,9 @@ export default function BackofficePage(){
       <th style={{textAlign:"right",padding:"10px"}}>ยอด</th>
      </tr></thead>
      <tbody>
-      {officeItems.map((item,index)=><tr key={`${item.id}-${index}`}>
-       <td style={{padding:"10px"}}>{item.round_date?`รอบวันที่ ${roundLabel(item.round_date)}`:"-"}</td>
-       <td style={{padding:"10px"}}>{dateTime(item.submitted_at||item.imported_at)}</td>
+      {officeDisplayItems.map((item,index)=><tr key={`${item.id}-${index}`}>
+       <td style={{padding:"10px",fontWeight:item.showDay?800:400}}>{item.showDay?(item.round_date?`รอบวันที่ ${roundLabel(item.round_date)}`:"-"):""}</td>
+       <td style={{padding:"10px",fontWeight:item.showDay?800:400}}>{item.showDay?item.sentDayLabel:""}</td>
        <td style={{padding:"10px",fontWeight:700}}>{item.value}</td>
        <td style={{padding:"10px"}}>{item.category_label}</td>
        <td style={{padding:"10px",textAlign:"right"}}>{Number(item.heart).toLocaleString()}</td>
@@ -260,6 +273,17 @@ export default function BackofficePage(){
      </tbody>
     </table>
    </section>}
+
+   <section className="top-number-panel">
+    <div className="panel-title-2d"><span>🔥</span><div><small>ยอดรวมตามเลขและประเภท</small><h2>เลขยอดสูงสุด</h2></div></div>
+    <div className="top-number-grid">
+     {topNumbers.length?topNumbers.map((item,index)=><article key={`${item.category_label}-${item.value}`}>
+      <span className="rank-badge">#{index+1}</span>
+      <div><strong>{item.value}</strong><small>{item.category_label}</small></div>
+      <b>{item.amount.toLocaleString()}</b>
+     </article>):<p>ยังไม่มีข้อมูล</p>}
+    </div>
+   </section>
 
    {exportType==="analysis"&&<section style={{marginBottom:"28px",overflowX:"auto"}}>
     <table style={{width:"100%",borderCollapse:"collapse",minWidth:"640px"}}>

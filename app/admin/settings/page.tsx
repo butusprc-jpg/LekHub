@@ -209,8 +209,8 @@ export default function SettingsPage(){
   <aside className="admin-sidebar">
    <div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>OA BACKOFFICE</small></div></div>
    <nav>
-    <Link href="/admin">ภาพรวม</Link>
-    <Link href="/admin/reports">กล่องรับ</Link>
+    <Link href="/admin">สรุป</Link>
+    <Link href="/admin/reports">รับเข้า</Link>
     <Link href="/admin/members">สมาชิก</Link>
     <Link href="/admin/backoffice">ตารางกิจกรรม</Link>
     <Link className="active" href="/admin/settings">ตั้งค่าระบบ</Link>
@@ -221,7 +221,7 @@ export default function SettingsPage(){
   <section className="admin-content">
    <header className="admin-topbar">
     <div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>ตั้งค่าระบบ</h1></div>
-   </header>
+   </header><section className="page-banner-2d"><span>⚙️</span><div><h2>ตั้งค่าระบบ</h2><p>ตั้งเวลารับรายการ ค่ายอดประเภท และผลรางวัล</p></div></section>
 
    {message&&<div className="admin-success">{message}</div>}
    {error&&<div className="admin-error">{error}</div>}

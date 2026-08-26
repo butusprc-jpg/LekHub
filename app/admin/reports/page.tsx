@@ -111,8 +111,8 @@ export default function ReportsPage() {
     <aside className="admin-sidebar">
       <div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>OA BACKOFFICE</small></div></div>
       <nav>
-        <Link href="/admin">ภาพรวม</Link>
-        <Link className="active" href="/admin/reports">กล่องรับ</Link>
+        <Link href="/admin">สรุป</Link>
+        <Link className="active" href="/admin/reports">รับเข้า</Link>
         <Link href="/admin/backoffice">รายงานหลังบ้าน</Link>
         <Link href="/admin/settings">ตั้งค่าระบบ</Link>
       </nav>
@@ -120,9 +120,9 @@ export default function ReportsPage() {
 
     <section className="admin-content">
       <header className="admin-topbar">
-        <div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>กล่องรับ</h1></div>
+        <div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>รับเข้า</h1></div>
         <Link href="/admin/backoffice">ดูรายงานหลังบ้าน →</Link>
-      </header>
+      </header><section className="page-banner-2d"><span>📥</span><div><h2>รับเข้า</h2><p>ตรวจรายการจากสมาชิกก่อนนำเข้าหลังบ้าน</p></div></section>
 
       {loading&&<p>กำลังโหลด...</p>}
       {error&&<div className="admin-error">{error}<br/><button type="button" onClick={load}>ลองใหม่</button></div>}

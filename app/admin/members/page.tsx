@@ -37,15 +37,15 @@ export default function MembersPage(){
   <aside className="admin-sidebar">
    <div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>OA BACKOFFICE</small></div></div>
    <nav>
-    <Link href="/admin">ภาพรวม</Link>
-    <Link href="/admin/reports">กล่องรับ</Link>
+    <Link href="/admin">สรุป</Link>
+    <Link href="/admin/reports">รับเข้า</Link>
     <Link className="active" href="/admin/members">สมาชิก</Link>
     <Link href="/admin/backoffice">ตารางกิจกรรม</Link>
     <Link href="/admin/settings">ตั้งค่าระบบ</Link>
    </nav>
   </aside>
   <section className="admin-content">
-   <header className="admin-topbar"><div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>สมาชิก</h1></div></header>
+   <header className="admin-topbar"><div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>สมาชิก</h1></div></header><section className="page-banner-2d"><span>👥</span><div><h2>สมาชิก</h2><p>ดูยอดรวมและข้อความสมาชิก</p></div></section>
    {loading&&<p>กำลังโหลด...</p>}
    {error&&<div className="admin-error">{error}</div>}
    <div style={{overflowX:"auto"}}>

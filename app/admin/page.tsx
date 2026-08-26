@@ -27,28 +27,40 @@ export default function AdminPage(){
   <aside className="admin-sidebar">
    <div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>OA BACKOFFICE</small></div></div>
    <nav>
-    <Link className="active" href="/admin">ภาพรวม</Link>
-    <Link href="/admin/reports">กล่องรับ</Link>
+    <Link className="active" href="/admin">สรุป</Link>
+    <Link href="/admin/reports">รับเข้า</Link>
     <Link href="/admin/members">สมาชิก</Link>
     <Link href="/admin/backoffice">รายงานหลังบ้าน</Link>
     <Link href="/admin/settings">ตั้งค่าระบบ</Link>
    </nav>
   </aside>
   <section className="admin-content">
-   <header className="admin-topbar"><div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>ภาพรวมหลังบ้าน</h1></div></header>
+   <header className="admin-topbar"><div><small>{session?`แอดมิน LINE • ${session.displayName}`:"กำลังเชื่อม LINE"}</small><h1>สรุป</h1></div></header>
    {error&&<div className="admin-error">{error}</div>}
-   <div className="stat-grid">
+   <section className="admin-hero-2d">
+    <div>
+     <span className="hero-kicker">LEKHUB OA BACKOFFICE</span>
+     <h2>สรุปงานวันนี้</h2>
+     <p>ดูงานรับเข้า ตรวจรายการ และสถานะนำเข้าหลังบ้านได้ในหน้าจอเดียว</p>
+     <div className="hero-actions">
+      <Link href="/admin/reports">📥 เปิดรับเข้า</Link>
+      <Link href="/admin/backoffice">📊 ตารางกิจกรรม</Link>
+     </div>
+    </div>
+    <img src="/lekhub-dashboard-2d.webp" alt="ภาพประกอบแดชบอร์ด LekHub"/>
+   </section>
+   <div className="stat-grid stat-grid-2d">
     <Link href="/admin/reports" style={{textDecoration:"none",color:"inherit"}}>
-     <article><small>งานเข้า</small><b>{rows.length}</b></article>
+     <article><span className="stat-icon">📥</span><small>รับเข้าทั้งหมด</small><b>{rows.length}</b><em>รายการ</em></article>
     </Link>
     <Link href="/admin/reports?status=pending" style={{textDecoration:"none",color:"inherit"}}>
-     <article><small>รอตรวจ</small><b>{pending}</b></article>
+     <article><span className="stat-icon">⏳</span><small>รอตรวจ</small><b>{pending}</b><em>รายการ</em></article>
     </Link>
     <Link href="/admin/reports?status=reviewed" style={{textDecoration:"none",color:"inherit"}}>
-     <article><small>ตรวจแล้ว</small><b>{reviewed}</b></article>
+     <article><span className="stat-icon">✅</span><small>ตรวจแล้ว</small><b>{reviewed}</b><em>รายการ</em></article>
     </Link>
     <Link href="/admin/backoffice" style={{textDecoration:"none",color:"inherit"}}>
-     <article><small>นำเข้าแล้ว</small><b>{imported}</b></article>
+     <article><span className="stat-icon">📚</span><small>นำเข้าแล้ว</small><b>{imported}</b><em>รายการ</em></article>
     </Link>
    </div>
   </section>
