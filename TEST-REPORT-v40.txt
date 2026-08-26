@@ -1,0 +1,29 @@
+LEKHUB v40 - MIDDLEWARE REDIRECT LOOP FIX
+
+เจอสาเหตุจาก production runtime log:
+- POST /api/admin/line-login = 200
+- ต่อด้วย GET /admin/reports = 307
+- แล้ว GET /admin/login
+- วนซ้ำหลายครั้ง
+
+สาเหตุจริง:
+middleware.ts เดิมจับ /admin/:path* แล้วใช้ Supabase Auth JWT (getClaims/admin_profiles)
+แต่ระบบใหม่ใช้ LINE admin session token จึงถูก middleware เตะไป /admin/login ก่อนหน้า client page จะได้ทำงาน
+
+v40:
+- middleware /admin pass-through เท่านั้น
+- authorization ใช้ LINE admin client session ในหน้า admin
+- ไม่ใช้ Supabase Auth JWT middleware กับ /admin อีก
+
+CHECKS: 11/11 PASS
+PASS - middleware ไม่ redirect /admin ไป login
+PASS - middleware ไม่เรียก Supabase Auth JWT
+PASS - legacy middleware ไม่ redirect
+PASS - /admin เป็น client page
+PASS - /admin/settings เป็น client page
+PASS - /admin/reports เป็น client page
+PASS - client admin session ตรวจ LINE token
+PASS - login API คืน sessionToken
+PASS - settings ไม่ใช้ server redirect
+PASS - reports ไม่ใช้ server redirect
+PASS - TypeScript/TSX parser error = 0

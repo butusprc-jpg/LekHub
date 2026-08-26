@@ -1,0 +1,5 @@
+LekHub full project package
+Production commit reference: 4563c516d5fb33636abef08acd2e0256b2aab573
+Vercel production deployment: dpl_4Hc3DRqSXeDzCacLP2iV1d2Au223 (READY)
+Broken route app/api/member/submit/route.ts removed.
+Full project source/assets package, not patch-only.

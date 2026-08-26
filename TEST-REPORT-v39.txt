@@ -1,0 +1,40 @@
+LekHub v39 - CLIENT ADMIN SESSION (COOKIE-INDEPENDENT)
+
+STATIC CHECKS: 17/17 PASS
+TYPESCRIPT/TSX PARSER ERRORS: 0
+
+แนวทางใหม่:
+- เลิกพึ่ง admin HttpOnly cookie เป็นตัวหลักใน LINE embedded browser
+- /api/admin/line-login คืน sessionToken ที่ Supabase ออกให้
+- token ถูกเก็บใน localStorage ของ app origin
+- ทุกหน้า /admin, /admin/settings, /admin/reports, /admin/backoffice เป็น client page
+- แต่ละหน้าตรวจ token โดยตรงกับ lekhub_check_line_admin_session
+- ถ้า token ไม่มี/หมดอายุ จะ LIFF login ใหม่อัตโนมัติ
+
+Flow รายงาน:
+Flex -> LIFF -> /api/admin/line-login -> store token -> /admin/reports -> RPC list inbox
+
+Flow ตั้งค่า:
+LIFF -> store token -> /admin/settings -> RPC get settings -> RPC update settings
+
+เหตุผล:
+อาการเดิมเห็น lotus แต่ไม่เข้าหน้า admin สอดคล้องกับ cookie/session ไม่ถูกนำไปใช้ใน LINE in-app browser
+v39 เลี่ยงจุดนั้นโดยตรง แทนการแก้ cookie ซ้ำ
+
+PASS - API คืน sessionToken
+PASS - client helper เก็บ token localStorage
+PASS - client helper validate token กับ Supabase
+PASS - client helper fallback login ผ่าน LINE access token
+PASS - Settings ไม่ใช้ server cookie redirect
+PASS - Settings load ผ่าน client admin session
+PASS - Settings save ผ่าน RPC
+PASS - Reports ไม่ใช้ server cookie redirect
+PASS - Reports list ผ่าน client RPC
+PASS - Reports ตรวจแล้วผ่าน client RPC
+PASS - Reports import ผ่าน client RPC
+PASS - Backoffice list ผ่าน client RPC
+PASS - Dashboard ใช้ client session
+PASS - LIFF report launcher เก็บ sessionToken ก่อน redirect
+PASS - Login page เก็บ sessionToken ก่อน redirect
+PASS - ไม่มี close time UI/gate
+PASS - TypeScript/TSX parser errors = 0
