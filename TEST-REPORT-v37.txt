@@ -1,0 +1,30 @@
+LekHub v37 - REMOVE CLOSE TIME + ADMIN LOTUS LOGIN FIX
+
+CHECKS: 13/13 PASS
+
+Production DB:
+- submit_lekhub_submission no longer checks close_time
+- get_lekhub_public_status ignores close_time
+- accepting forced TRUE for current testing
+- lotus is confirmed active owner in lekhub_line_admins
+- active admin sessions exist
+
+UI:
+- removed close-time display from member play page
+- removed close-time input from Settings
+- Settings controls only เปิดรับรายการ
+- admin login now verifies the HttpOnly session cookie before redirect
+
+PASS - หน้าเล่นไม่มีข้อความเวลาปิดรับ
+PASS - หน้าเล่นแสดงเปิดรับ/ปิดรับอย่างเดียว
+PASS - บันทึกส่งยังเรียก submit
+PASS - submit ยังเรียก Supabase
+PASS - Settings ไม่มี input close_time
+PASS - Settings ยังมี toggle เปิดรับรายการ
+PASS - Settings action ยังเรียก update RPC
+PASS - Login fetch ใช้ credentials same-origin
+PASS - Login ตรวจ session ก่อน redirect
+PASS - มี session-check endpoint
+PASS - session-check ใช้ getLineAdminSession
+PASS - login API no-store
+PASS - TypeScript/TSX ไม่มี parser error

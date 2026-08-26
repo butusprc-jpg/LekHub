@@ -1,0 +1,44 @@
+LekHub v34 - OA Review -> Import Backoffice
+STATIC CHECKS: 28/28 PASS
+
+FLOW ที่ตรวจ:
+1. สมาชิกกด ทบทวนก่อนส่ง
+2. สมาชิกกด บันทึกส่ง
+3. submit_lekhub_submission บันทึกลง Supabase
+4. ถ้าเปิดผ่าน LINE/LIFF ส่ง Flex กลับแชต OA พร้อมปุ่ม เปิดตรวจสอบรายการ
+5. แอดมินเปิด กล่องรับจาก OA
+6. แอดมินกด ตรวจแล้ว
+7. ปุ่ม นำเข้าหลังบ้าน เปิดใช้งาน
+8. กด นำเข้าหลังบ้าน -> สร้าง snapshot ใน lekhub_backoffice_reports + lekhub_backoffice_report_items
+9. รายการแสดงที่ /admin/backoffice
+
+Supabase production migration: APPLIED
+
+PASS - เพิ่ม -> add
+PASS - ทบทวนก่อนส่ง -> openReview
+PASS - openReview เปิด modal
+PASS - บันทึกส่ง -> submit
+PASS - บันทึกส่ง -> Supabase
+PASS - บันทึกส่ง -> LINE Flex เมื่อ LIFF พร้อม
+PASS - Flex มีปุ่มเปิดตรวจสอบ OA
+PASS - กลับไปแก้ไขปิด modal
+PASS - กล่อง OA ใช้ inbox RPC
+PASS - ปุ่มตรวจแล้วส่ง status reviewed
+PASS - ปุ่มยกเลิกส่ง status cancelled
+PASS - ปุ่มนำเข้าหลังบ้านมี action
+PASS - นำเข้าถูกล็อกจนตรวจแล้ว
+PASS - import action เรียก import RPC
+PASS - หลังบ้านใช้ list backoffice RPC
+PASS - route /admin/backoffice มีไฟล์
+PASS - route /admin/reports มีไฟล์
+PASS - route /admin/settings มีไฟล์
+PASS - route /member/play มีไฟล์
+PASS - route /report มีไฟล์
+PASS - route /rules มีไฟล์
+PASS - เมนู ภาพรวม มี link
+PASS - เมนู กล่องรับจาก OA มี link
+PASS - เมนู รายงานหลังบ้าน มี link
+PASS - เมนู ตั้งค่าระบบ มี link
+PASS - เมนูสมาชิก เล่น / บันทึกรายการ
+PASS - เมนูสมาชิก รายงานของฉัน
+PASS - เมนูสมาชิก กฎกติกา

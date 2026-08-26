@@ -1,50 +1,30 @@
 "use client"
 
-import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { initLIFF } from "./liff"
 
-const STORAGE_KEY="lekhub_line_admin_token"
-
-function browserSupabase(){
- const url=process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
- const key=(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY??process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)?.trim()
- if(!url||!key)throw new Error("Missing Supabase environment variables")
- return createSupabaseClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}})
-}
-
-export type ClientAdminSession={token:string;displayName:string;role:string}
+export type ClientAdminSession={displayName:string;role:string}
 
 export function clearClientAdminSession(){
- if(typeof window!=="undefined")localStorage.removeItem(STORAGE_KEY)
-}
-
-async function validateToken(token:string):Promise<ClientAdminSession|null>{
- const {data,error}=await browserSupabase().rpc("lekhub_check_line_admin_session",{p_token:token})
- if(error||!data?.ok)return null
- return {token,displayName:String(data.display_name||"LINE Admin"),role:String(data.role||"admin")}
+ // The real admin credential is an HttpOnly cookie and cannot be read by JavaScript.
+ // Logout/revocation is handled by the existing server logout route.
+ fetch("/api/admin/logout",{method:"POST",credentials:"same-origin",cache:"no-store"}).catch(()=>{})
 }
 
 async function sessionFromCookie():Promise<ClientAdminSession|null>{
  try{
   const response=await fetch("/api/admin/session",{credentials:"same-origin",cache:"no-store"})
   const data=await response.json().catch(()=>({}))
-  if(!response.ok||!data?.ok||!data?.sessionToken)return null
-  const token=String(data.sessionToken)
-  localStorage.setItem(STORAGE_KEY,token)
-  return await validateToken(token)
- }catch{return null}
+  if(!response.ok||!data?.ok)return null
+  return {
+   displayName:String(data.displayName||"LINE Admin"),
+   role:String(data.role||"admin"),
+  }
+ }catch{
+  return null
+ }
 }
 
 export async function ensureLineAdminSession():Promise<ClientAdminSession>{
- const existing=localStorage.getItem(STORAGE_KEY)
- if(existing){
-  const valid=await validateToken(existing)
-  if(valid)return valid
-  localStorage.removeItem(STORAGE_KEY)
- }
-
- // Reuse the HttpOnly admin cookie before invoking LIFF.
- // This prevents the report link from flashing the member/play page.
  const cookieSession=await sessionFromCookie()
  if(cookieSession)return cookieSession
 
@@ -61,20 +41,35 @@ export async function ensureLineAdminSession():Promise<ClientAdminSession>{
   body:JSON.stringify({accessToken}),
  })
  const result=await response.json().catch(()=>({}))
- if(!response.ok||!result.ok||!result.sessionToken){
+ if(!response.ok||!result.ok){
   if(result.error==="line_user_not_admin")throw new Error("LINE นี้ไม่มีสิทธิ์เข้าหลังบ้าน")
   throw new Error(result.error||"เข้าสู่หลังบ้านไม่สำเร็จ")
  }
- const token=String(result.sessionToken)
- localStorage.setItem(STORAGE_KEY,token)
- const valid=await validateToken(token)
- if(!valid){
-  localStorage.removeItem(STORAGE_KEY)
-  throw new Error("สร้าง session แล้วแต่ตรวจสอบสิทธิ์ซ้ำไม่ผ่าน")
- }
- return valid
+
+ const verified=await sessionFromCookie()
+ if(!verified)throw new Error("สร้าง session แล้วแต่ตรวจสอบสิทธิ์ซ้ำไม่ผ่าน")
+ return verified
 }
 
-export async function adminRpc(session:ClientAdminSession,name:string,args:Record<string,unknown>={}){
- return browserSupabase().rpc(name,{p_token:session.token,...args})
+export async function adminRpc(
+ _session:ClientAdminSession,
+ name:string,
+ args:Record<string,unknown>={}
+):Promise<{data:any;error:{message:string}|null}>{
+ try{
+  const response=await fetch("/api/admin/rpc",{
+   method:"POST",
+   headers:{"content-type":"application/json"},
+   credentials:"same-origin",
+   cache:"no-store",
+   body:JSON.stringify({name,args}),
+  })
+  const result=await response.json().catch(()=>({}))
+  if(!response.ok||!result?.ok){
+   return {data:null,error:{message:String(result?.error||"admin_rpc_failed")}}
+  }
+  return {data:result.data??null,error:null}
+ }catch(error){
+  return {data:null,error:{message:error instanceof Error?error.message:"admin_rpc_failed"}}
+ }
 }
