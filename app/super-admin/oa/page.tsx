@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { ensureLineAdminSession, type ClientAdminSession } from "../../../lib/line-admin-client"
 
@@ -89,10 +88,7 @@ export default function TenantOAPage(){
  return <main className="admin-shell">
   <aside className="admin-sidebar">
    <div className="admin-brand"><span>LH</span><div><b>LekHub</b><small>MAIN ADMIN</small></div></div>
-   <nav>
-    <Link href="/admin">หลังบ้าน OA หลัก</Link>
-    <Link className="active" href="/super-admin/oa">คุม OA ผู้เช่า</Link>
-   </nav>
+   <div style={{padding:"14px 16px",fontWeight:800}}>คุม OA ผู้เช่า</div>
   </aside>
 
   <section className="admin-content">
