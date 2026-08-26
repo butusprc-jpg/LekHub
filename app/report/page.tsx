@@ -21,6 +21,10 @@ type Row={
  items:ReportItem[]
 }
 
+type ShareTargetPickerCapable={
+ shareTargetPicker?: (messages:unknown[],options?:{isMultiple?:boolean})=>Promise<unknown>
+}
+
 function dateTime(value:string){
  return new Intl.DateTimeFormat("th-TH",{
   timeZone:"Asia/Bangkok",
@@ -127,8 +131,9 @@ export default function Report(){
   setError("")
   try{
    const line=await initLIFF().catch(()=>null)
-   if(line?.liff.shareTargetPicker){
-    await line.liff.shareTargetPicker([{type:"text",text}],{isMultiple:true})
+   const liffWithShare=line?.liff as (typeof line.liff & ShareTargetPickerCapable)|undefined
+   if(liffWithShare?.shareTargetPicker){
+    await liffWithShare.shareTargetPicker([{type:"text",text}],{isMultiple:true})
     return
    }
 
