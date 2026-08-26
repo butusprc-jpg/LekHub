@@ -1,14 +1,9 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { ADMIN_COOKIE } from "../../../../lib/admin-session"
+import { verifyLineMember } from "../../../../lib/server/line-member"
 
 export const runtime = "nodejs"
-
-type LineProfile = {
-  userId?: string
-  displayName?: string
-  pictureUrl?: string
-}
 
 function supabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
@@ -33,29 +28,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "missing_line_access_token" }, { status: 400 })
     }
 
-    const profileResponse = await fetch("https://api.line.me/v2/profile", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      cache: "no-store",
-    })
-
-    if (!profileResponse.ok) {
-      return NextResponse.json({ ok: false, error: "line_token_invalid" }, { status: 401 })
-    }
-
-    const profile = await profileResponse.json() as LineProfile
-    if (!profile.userId || !profile.displayName) {
-      return NextResponse.json({ ok: false, error: "line_profile_invalid" }, { status: 401 })
-    }
-
-    const { data, error } = await supabaseClient().rpc("lekhub_line_admin_login", {
+    const profile = await verifyLineMember(accessToken)
+    const { data, error } = await supabaseClient().rpc("lekhub_line_admin_login_v2", {
+      p_channel_id: profile.channelId,
       p_line_user_id: profile.userId,
       p_display_name: profile.displayName,
-      p_picture_url: profile.pictureUrl || null,
+      p_picture_url: profile.pictureUrl,
     })
 
     if (error) {
       console.error("LINE admin RPC failed", error)
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+      const status=String(error.message||"").includes("tenant_")?403:500
+      return NextResponse.json({ ok: false, error: error.message }, { status })
     }
 
     if (!data?.ok || !data?.session_token) {
@@ -68,8 +52,10 @@ export async function POST(request: Request) {
     const response = NextResponse.json(
       {
         ok: true,
+        sessionToken:String(data.session_token),
         displayName: data.display_name || profile.displayName,
         role: data.role || "admin",
+        tenantKey: data.tenant_key || null,
       },
       { headers: { "cache-control": "no-store, max-age=0" } },
     )
@@ -84,7 +70,10 @@ export async function POST(request: Request) {
 
     return response
   } catch (error) {
-    console.error("LINE admin login failed", error)
-    return NextResponse.json({ ok: false, error: "admin_login_failed" }, { status: 500 })
+    const code=error instanceof Error?error.message:"admin_login_failed"
+    const status=code.startsWith("line_")||code==="missing_line_access_token"?401:
+      code.includes("tenant_")?403:500
+    if(status===500)console.error("LINE admin login failed", error)
+    return NextResponse.json({ ok: false, error: code }, { status })
   }
 }
