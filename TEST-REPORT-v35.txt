@@ -1,0 +1,44 @@
+LekHub v35 - CHECK BEFORE SEND
+
+STATIC HANDLER/ROUTE CHECK: 26/26 PASS
+TYPESCRIPT/TSX PARSE: PASS (no TS1xxx syntax parser errors)
+SUPABASE LIVE SUBMIT TEST: PASS
+  - ทดสอบ submit_lekhub_submission ใน transaction
+  - ได้ success=true, status=pending, item_count=1, total=10
+  - transaction rollback แล้ว จึงไม่ทิ้งข้อมูลทดสอบ
+
+สิ่งที่ไม่ได้อ้างว่าได้ทดสอบ:
+- ไม่สามารถจำลองการกดจริงใน LINE LIFF/OA จากเครื่องมือนี้ได้
+- sendMessages ต้องทดสอบใน LINE context จริง เพราะ LINE SDK เป็นผู้ควบคุม context
+
+สำคัญ:
+- Production ตอนตรวจตั้ง close_time = 15:30 Asia/Bangkok
+- หลังเวลานี้ backend จะปฏิเสธการบันทึกตามกติกา ไม่ใช่ปุ่มเสีย
+- v35 แสดงข้อความ 'ปิดรับรายการแล้ว...' ให้เห็นทันที แทนการกดแล้วเหมือนไม่เกิดอะไร
+
+PASS - เพิ่ม -> add()
+PASS - ทบทวนก่อนส่ง -> openReview()
+PASS - openReview -> setReviewing(true)
+PASS - บันทึกส่ง -> submit()
+PASS - submit -> submit_lekhub_submission
+PASS - submit แสดงเหตุผลเมื่อปิดรับ
+PASS - LINE พร้อม -> sendMessages
+PASS - Flex -> เปิดตรวจสอบ OA
+PASS - กลับไปแก้ไข -> setReviewing(false)
+PASS - ปุ่มหลักมี type=button
+PASS - route /member/play มีไฟล์ปลายทาง
+PASS - route /report มีไฟล์ปลายทาง
+PASS - route /rules มีไฟล์ปลายทาง
+PASS - route /admin มีไฟล์ปลายทาง
+PASS - route /admin/reports มีไฟล์ปลายทาง
+PASS - route /admin/backoffice มีไฟล์ปลายทาง
+PASS - route /admin/settings มีไฟล์ปลายทาง
+PASS - OA inbox -> list RPC
+PASS - ตรวจแล้ว -> reviewed
+PASS - ยกเลิก -> cancelled
+PASS - นำเข้าหลังบ้าน -> importSubmission
+PASS - นำเข้าเปิดหลัง reviewed เท่านั้น
+PASS - import action -> import RPC
+PASS - backoffice -> list RPC
+PASS - SQL package มี 3 RPC
+PASS - TypeScript/TSX ไม่มี syntax parser error

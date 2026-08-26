@@ -65,8 +65,10 @@ export default function BackofficePage(){
  useEffect(()=>{load()},[])
  useEffect(()=>{
   if(!session)return
-  fetch("https://uhpgnwclyzjnmnbrnglb.supabase.co/functions/v1/lekhub-cleanup-uploads",{
-   method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({adminToken:session.token})
+  fetch("/api/admin/cleanup-uploads",{
+   method:"POST",
+   credentials:"same-origin",
+   cache:"no-store",
   }).catch(()=>{})
  },[session])
 

@@ -1,0 +1,28 @@
+LekHub v38 - LIFF ADMIN OPEN FIX
+
+STATIC CHECKS: 14/14 PASS
+SUPABASE LIVE DB LOGIN/SESSION TEST: PASS
+  lotus -> lekhub_line_admin_login = true
+  returned token -> lekhub_check_line_admin_session = true
+
+แก้ flow:
+1. รายงานที่ส่งกลับ LINE ใช้ LIFF permanent link ไม่ยิง /admin/reports ตรง ๆ
+2. LIFF เปิดด้วย LINE context -> ได้ access token/profile
+3. เรียก /api/admin/line-login -> สร้าง cookie
+4. full-page redirect เข้า /admin/reports หรือ /admin/settings
+5. ตั้งค่าในเมนูสมาชิกมี LIFF launcher โดยตรง
+
+PASS - login POST ใช้ credentials same-origin
+PASS - login สำเร็จแล้ว full-page replace
+PASS - login ไม่บังคับ session-check race
+PASS - login error มีปุ่มลองอีกครั้ง
+PASS - admin cookie SameSite=None
+PASS - cookie secure=true
+PASS - PlayPage มี LIFF admin launcher
+PASS - LIFF launcher login ผ่าน /api/admin/line-login
+PASS - LIFF launcher settings -> /admin/settings
+PASS - LIFF launcher reports -> /admin/reports
+PASS - Flex report button ใช้ liff.line.me
+PASS - Member menu มีตั้งค่าระบบผ่าน LIFF
+PASS - ไม่มี close-time gate UI
+PASS - TypeScript/TSX ไม่มี parser error

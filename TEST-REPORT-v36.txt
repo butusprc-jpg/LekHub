@@ -1,0 +1,25 @@
+LekHub v36 - outside_accepting_time + settings pgcrypto fix
+
+CHECKS: 10/10 PASS
+Production DB fix applied: YES
+pgcrypto live test: extensions.gen_random_bytes + extensions.digest PASS
+
+เหตุที่เจอ:
+1) outside_accepting_time = ระบบปิดรับตามเวลา 15:30 Asia/Bangkok
+2) Settings login error = pgcrypto อยู่ schema extensions แต่ function เดิมเรียก gen_random_bytes/digest แบบไม่ระบุ schema
+
+v36 แก้:
+- หน้าเล่นแปล outside_accepting_time เป็นข้อความภาษาไทยและบอกให้ไปตั้งค่าเวลาปิดรับ
+- SQL login/session ใช้ extensions.gen_random_bytes และ extensions.digest
+- ปุ่มตั้งค่าบันทึกยังเรียก lekhub_line_admin_update_settings
+
+PASS - บันทึกส่งเรียก submit
+PASS - outside_accepting_time แปลเป็นข้อความใช้งานได้
+PASS - not_accepting แปลเป็นข้อความใช้งานได้
+PASS - ตั้งค่า route มีอยู่
+PASS - settings action มีอยู่
+PASS - ปุ่มบันทึกตั้งค่าเรียก update settings RPC
+PASS - migration ใช้ extensions.gen_random_bytes
+PASS - migration ใช้ extensions.digest
+PASS - ไม่มี gen_random_byted typo
+PASS - TypeScript/TSX ไม่มี parser error

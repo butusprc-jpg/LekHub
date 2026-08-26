@@ -1,0 +1,36 @@
+LekHub v33 - Button/Menu Static Verification
+PASS: 27
+FAIL: 0
+
+PASS - ปุ่ม + เพิ่ม เรียก add()
+PASS - ปุ่ม ทบทวนก่อนส่ง เรียก openReview()
+PASS - openReview เปิด review overlay
+PASS - ปุ่ม บันทึกส่ง เรียก submit()
+PASS - submit เรียก Supabase RPC
+PASS - submit ไม่หยุดเพราะ LIFF โหลดช้า
+PASS - submit มี fallback web user id
+PASS - ส่ง LINE เมื่อ LIFF พร้อม
+PASS - ปุ่ม กลับไปแก้ไข ปิด review
+PASS - ปุ่มปิดหน้าจอเรียก close()
+PASS - ปุ่มใน play ระบุ type=button
+PASS - เมนู เล่น / บันทึกรายการ มีลิงก์
+PASS - เมนู เล่น / บันทึกรายการ มี route ปลายทาง
+PASS - เมนู รายงานของฉัน มีลิงก์
+PASS - เมนู รายงานของฉัน มี route ปลายทาง
+PASS - เมนู กฎกติกา มีลิงก์
+PASS - เมนู กฎกติกา มี route ปลายทาง
+PASS - เมนูหลังบ้าน ภาพรวม มีลิงก์
+PASS - เมนูหลังบ้าน ภาพรวม มี route ปลายทาง
+PASS - เมนูหลังบ้าน รายงานที่ส่งมา มีลิงก์
+PASS - เมนูหลังบ้าน รายงานที่ส่งมา มี route ปลายทาง
+PASS - เมนูหลังบ้าน ตั้งค่าระบบ มีลิงก์
+PASS - เมนูหลังบ้าน ตั้งค่าระบบ มี route ปลายทาง
+PASS - ปุ่มตั้งค่าบันทึกมี form action saveSettings
+PASS - ปุ่มรายงานอัปเดตสถานะมี action updateSubmission
+PASS - ปุ่มออกจากระบบมี endpoint
+PASS - หน้า LINE admin login มี endpoint
+
+หมายเหตุ:
+- ตรวจโค้ดและ route ใน ZIP ก่อนแพ็กไฟล์แล้ว
+- ปุ่มบันทึกส่งจะบันทึกเข้า Supabase ก่อน และส่ง Flex กลับ LINE เมื่อ LIFF พร้อม
+- กฎเวลาปิดรับยังคงถูกบังคับที่ Supabase ตามกติกาของระบบ; ถ้าปิดรับ backend จะปฏิเสธรายการ

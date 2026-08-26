@@ -1,22 +1,14 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { getLineAdminSession } from "../../../../lib/admin-session"
 
 export const runtime="nodejs"
-
-function supabase(){
- const url=process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
- const key=(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY??process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)?.trim()
- if(!url||!key)throw new Error("Missing Supabase environment variables")
- return createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}})
-}
 
 export async function POST(request:Request){
  try{
   const body=await request.json().catch(()=>({}))
-  const adminToken=String(body.adminToken||"")
+  const session=await getLineAdminSession()
+  if(!session)return NextResponse.json({ok:false,error:"admin_required"},{status:401,headers:{"cache-control":"no-store, max-age=0"}})
   const winners=Array.isArray(body.winners)?body.winners:[]
-  const {data,error}=await supabase().rpc("lekhub_check_line_admin_session",{p_token:adminToken})
-  if(error||!data?.ok)return NextResponse.json({ok:false,error:"admin_required"},{status:403})
 
   const channelToken=process.env.LINE_CHANNEL_ACCESS_TOKEN?.trim()
   if(!channelToken)return NextResponse.json({ok:true,pushed:0,skipped:"line_push_not_configured"})
