@@ -9,10 +9,14 @@ export async function GET(request:Request){
   const member=await verifyLineMember(bearerToken(request))
   const supabase=createServerAdminClient()
 
-  const noteResult=await supabase.rpc("lekhub_member_get_note",{p_line_user_id:member.userId})
+  const noteResult=await supabase.rpc("lekhub_member_get_note_v2",{
+   p_channel_id:member.channelId,
+   p_line_user_id:member.userId,
+  })
   if(noteResult.error)throw noteResult.error
 
-  const rowsResult=await supabase.rpc("lekhub_member_list_submissions",{
+  const rowsResult=await supabase.rpc("lekhub_member_list_submissions_v2",{
+   p_channel_id:member.channelId,
    p_line_user_id:member.userId,
    p_limit:300,
   })
@@ -28,7 +32,8 @@ export async function GET(request:Request){
   )
  }catch(error){
   const code=error instanceof Error?error.message:"member_report_failed"
-  const status=code.startsWith("line_")||code==="missing_line_access_token"?401:500
+  const status=code.startsWith("line_")||code==="missing_line_access_token"?401:
+   code.includes("tenant_")?403:500
   if(status===500)console.error("LekHub member report failed",error)
   return NextResponse.json({ok:false,error:code},{status,headers:{"cache-control":"no-store, max-age=0"}})
  }
