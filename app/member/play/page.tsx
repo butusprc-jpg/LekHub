@@ -64,19 +64,40 @@ export default function PlayPage(){
 
 
  function getLiffRouteParams(){
+  const merged=new URLSearchParams()
+
+  const addQuery=(raw:string)=>{
+   if(!raw)return
+   let text=raw.trim()
+   // LINE may encode liff.state more than once depending on the redirect path.
+   for(let i=0;i<3;i++){
+    try{
+     const decoded=decodeURIComponent(text)
+     if(decoded===text)break
+     text=decoded
+    }catch{break}
+   }
+   const question=text.indexOf("?")
+   if(question>=0)text=text.slice(question+1)
+   if(text.startsWith("#"))text=text.slice(1)
+   if(text.startsWith("?"))text=text.slice(1)
+   new URLSearchParams(text).forEach((value,key)=>{
+    if(key!=="liff.state"&&!merged.has(key))merged.set(key,value)
+   })
+  }
+
   const direct=new URLSearchParams(window.location.search)
-  const rawState=direct.get("liff.state")
-  if(!rawState)return direct
-
-  let state=rawState
-  try{state=decodeURIComponent(rawState)}catch{}
-
-  const question=state.indexOf("?")
-  const stateQuery=question>=0?state.slice(question+1):state.startsWith("?")?state.slice(1):state
-  const merged=new URLSearchParams(stateQuery)
   direct.forEach((value,key)=>{
    if(key!=="liff.state"&&!merged.has(key))merged.set(key,value)
   })
+
+  // Secondary redirect used by LIFF.
+  addQuery(direct.get("liff.state")||"")
+
+  // Defensive fallbacks for LINE in-app browser variants.
+  addQuery(window.location.hash)
+  addQuery(window.location.href)
+
   return merged
  }
 
