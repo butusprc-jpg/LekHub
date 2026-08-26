@@ -124,16 +124,25 @@ export default function Report(){
 
  async function shareReport(row:Row){
   const text=reportText(row)
+  setError("")
   try{
+   const line=await initLIFF().catch(()=>null)
+   if(line?.liff.shareTargetPicker){
+    await line.liff.shareTargetPicker([{type:"text",text}],{isMultiple:true})
+    return
+   }
+
    if(typeof navigator.share==="function"){
     await navigator.share({title:`LekHub ${row.reference_code}`,text})
     return
    }
+
    if(navigator.clipboard?.writeText){
     await navigator.clipboard.writeText(text)
     window.alert("คัดลอกรายงานแล้ว สามารถนำไปวางใน LINE ได้เลย")
     return
    }
+
    const area=document.createElement("textarea")
    area.value=text
    area.style.position="fixed"
@@ -145,7 +154,8 @@ export default function Report(){
    window.alert("คัดลอกรายงานแล้ว สามารถนำไปวางใน LINE ได้เลย")
   }catch(caught){
    if(caught instanceof DOMException&&caught.name==="AbortError")return
-   setError("แชร์รายงานไม่สำเร็จ กรุณาลองใหม่")
+   const message=caught instanceof Error?caught.message:"share_failed"
+   setError(`แชร์รายงานไม่สำเร็จ: ${message}`)
   }
  }
 
