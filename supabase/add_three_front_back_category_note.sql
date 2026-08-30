@@ -1,7 +1,0 @@
--- LekHub v63 compatibility note
--- New UI types: 3 หน้า / 3 หลัง.
--- Current production DB validator cannot be inspected from this session.
--- v63 therefore sends the historical category code "3top" to the existing RPC
--- while preserving the distinct category_label "3 หน้า" / "3 หลัง".
--- When DB inspection permission is available, migrate to native category keys
--- 3front / 3back and remove DB_CATEGORY from app/api/member/submit/route.ts.
