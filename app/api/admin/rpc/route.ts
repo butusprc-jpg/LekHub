@@ -37,11 +37,12 @@ export async function POST(request:Request){
    )
   }
 
-  const args=body?.args&&typeof body.args==="object"&&!Array.isArray(body.args)
+  const rawArgs=body?.args&&typeof body.args==="object"&&!Array.isArray(body.args)
    ? body.args as Record<string,unknown>
    : {}
+  const {p_token:_ignoredClientToken,...args}=rawArgs
 
-  const {data,error}=await neonRpc(name,{p_token:session.token,...args})
+  const {data,error}=await neonRpc(name,{...args,p_token:session.token})
   if(error){
    console.error("LekHub admin RPC failed",name,error)
    return NextResponse.json(
