@@ -53,7 +53,9 @@ function tenantFromLocation(){
 async function resolveLiffId(){
   const tenant=tenantFromLocation()
   if(!tenant){
-    return (process.env.NEXT_PUBLIC_LINE_LIFF_ID || "2011199813-swdN7h10").trim()
+    const configured=(process.env.NEXT_PUBLIC_LINE_LIFF_ID||"").trim()
+    if(!configured)throw new Error("line_liff_not_configured")
+    return configured
   }
   const response=await fetch(`/api/tenant/liff?tenant=${encodeURIComponent(tenant)}`,{cache:"no-store"})
   const result=await response.json().catch(()=>({}))

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getLineAdminSession } from "../../../../lib/admin-session"
-import { createServerAdminClient } from "../../../../lib/server/supabase-admin"
+import { neonRpc,setTenantLineToken,deleteTenantLineToken,hasTenantLineToken } from "../../../../lib/server/neon-db"
 
 export const runtime="nodejs"
 
 type TenantStatus="active"|"locked"|"expired"
-type SupabaseLikeError={message?:unknown;code?:unknown;details?:unknown;hint?:unknown}
+type DbLikeError={message?:unknown;code?:unknown;details?:unknown;hint?:unknown}
 
 async function requireOwner(){
  const session=await getLineAdminSession()
@@ -21,14 +21,14 @@ function normalizeKey(value:unknown){
 }
 
 function projectRef(){
- try{return new URL(String(process.env.NEXT_PUBLIC_SUPABASE_URL||process.env.SUPABASE_URL||"")).hostname.split(".")[0]||"unknown"}
+ try{return new URL(String(process.env.DATABASE_URL||process.env.NEON_DATABASE_URL||"")).hostname||"unknown"}
  catch{return "unknown"}
 }
 
 function errorInfo(error:unknown){
  if(error instanceof Error)return {message:error.message,code:"",details:"",hint:""}
  if(error&&typeof error==="object"){
-  const value=error as SupabaseLikeError
+  const value=error as DbLikeError
   return {message:String(value.message||"database_error"),code:String(value.code||""),details:String(value.details||""),hint:String(value.hint||"")}
  }
  return {message:String(error||"unknown_error"),code:"",details:"",hint:""}
@@ -36,7 +36,7 @@ function errorInfo(error:unknown){
 
 function jsonError(error:unknown,status=500){
  const info=errorInfo(error)
- console.error("LekHub tenant control API failed",JSON.stringify({projectRef:projectRef(),...info}))
+ console.error("LekHub Neon tenant control API failed",JSON.stringify({projectRef:projectRef(),...info}))
  const readable=[info.message,info.code&&`(${info.code})`,info.details].filter(Boolean).join(" ")
  return NextResponse.json({ok:false,error:readable||"database_error"},{status,headers:{"cache-control":"no-store, max-age=0"}})
 }
@@ -44,7 +44,7 @@ function jsonError(error:unknown,status=500){
 export async function GET(){
  try{
   const auth=await requireOwner();if("error" in auth)return auth.error
-  const supabase=createServerAdminClient()
+  const supabase={rpc:neonRpc}
   const [tenants,requests]=await Promise.all([
    supabase.rpc("lekhub_owner_list_tenants",{p_token:auth.session.token}),
    supabase.rpc("lekhub_owner_list_admin_requests",{p_token:auth.session.token}),
@@ -63,11 +63,17 @@ export async function POST(request:NextRequest){
   const displayName=String(body.displayName||"").trim()
   const lineChannelId=String(body.lineChannelId||"").trim()||null
   const lineLiffId=String(body.lineLiffId||"").trim()||null
+  const lineChannelAccessToken=String(body.lineChannelAccessToken||"").trim()||null
   const expiresAt=body.expiresAt?new Date(String(body.expiresAt)).toISOString():null
   if(!tenantKey||!displayName)return NextResponse.json({ok:false,error:"กรอกชื่อสมาชิก/OA และรหัสผู้เช่าให้ครบ"},{status:400})
-  const {data,error}=await createServerAdminClient().rpc("lekhub_owner_create_tenant_v2",{
-   p_token:auth.session.token,p_tenant_key:tenantKey,p_display_name:displayName,
-   p_line_channel_id:lineChannelId,p_line_liff_id:lineLiffId,p_expires_at:expiresAt,
+  const {data,error}=await neonRpc("lekhub_owner_create_tenant_v3",{
+   p_token:auth.session.token,
+   p_tenant_key:tenantKey,
+   p_display_name:displayName,
+   p_line_channel_id:lineChannelId,
+   p_line_liff_id:lineLiffId,
+   p_line_channel_access_token:lineChannelAccessToken,
+   p_expires_at:expiresAt,
   })
   if(error)throw error
   return NextResponse.json({ok:true,row:data?.row},{headers:{"cache-control":"no-store, max-age=0"}})
@@ -80,7 +86,7 @@ export async function PATCH(request:NextRequest){
   const body=await request.json().catch(()=>({}))
   const tenantKey=normalizeKey(body.tenantKey)
   if(!tenantKey)return NextResponse.json({ok:false,error:"ไม่พบรหัสผู้เช่า"},{status:400})
-  const supabase=createServerAdminClient()
+  const supabase={rpc:neonRpc}
 
   if(body.approveAdminLineUserId!==undefined){
    const lineUserId=String(body.approveAdminLineUserId||"").trim()
@@ -102,6 +108,27 @@ export async function PATCH(request:NextRequest){
    patch.status=status
   }
   if(body.extendDays!==undefined)patch.extendDays=Math.max(1,Math.min(365,Number(body.extendDays)||30))
+
+  if(body.lineChannelAccessToken!==undefined){
+   const token=String(body.lineChannelAccessToken||"").trim()
+   if(token){
+    await setTenantLineToken(tenantKey,token)
+   }else{
+    await deleteTenantLineToken(tenantKey)
+   }
+  }
+
+  if(body.isolationReady===true){
+   const lineChannelId=String(body.lineChannelId||"").trim()
+   const lineLiffId=String(body.lineLiffId||"").trim()
+   const hasToken=await hasTenantLineToken(tenantKey)
+   if(!lineChannelId||!lineLiffId||!hasToken){
+    return NextResponse.json(
+     {ok:false,error:"ต้องตั้ง Channel ID, LIFF ID และ LINE Push Token ให้ครบก่อนเปิดใช้งานเช่า"},
+     {status:400,headers:{"cache-control":"no-store, max-age=0"}}
+    )
+   }
+  }
 
   const {data,error}=await supabase.rpc("lekhub_owner_update_tenant",{p_token:auth.session.token,p_tenant_key:tenantKey,p_patch:patch})
   if(error)throw error

@@ -4,14 +4,12 @@ export const runtime="nodejs"
 
 export async function GET(){
  const checks={
-  supabaseUrl:Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()),
-  publicKey:Boolean((process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY??process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)?.trim()),
-  serviceRole:Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
+  neonDatabase:Boolean((process.env.DATABASE_URL||process.env.NEON_DATABASE_URL)?.trim()),
+  blobToken:Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim()),
   liffId:Boolean(process.env.NEXT_PUBLIC_LINE_LIFF_ID?.trim()),
  }
- const ok=Object.values(checks).every(Boolean)
  return NextResponse.json(
-  {ok,checks},
-  {status:ok?200:503,headers:{"cache-control":"no-store, max-age=0"}}
+  {ok:Object.values(checks).every(Boolean),checks},
+  {status:Object.values(checks).every(Boolean)?200:503,headers:{"cache-control":"no-store"}}
  )
 }

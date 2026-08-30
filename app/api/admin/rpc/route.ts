@@ -1,6 +1,6 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { getLineAdminSession } from "../../../../lib/admin-session"
+import { neonRpc } from "../../../../lib/server/neon-db"
 
 export const runtime="nodejs"
 
@@ -17,12 +17,6 @@ const ALLOWED_RPC=new Set([
  "lekhub_line_admin_update_settings",
 ])
 
-function supabase(){
- const url=process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
- const key=(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY??process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)?.trim()
- if(!url||!key)throw new Error("Missing Supabase environment variables")
- return createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}})
-}
 
 export async function POST(request:Request){
  try{
@@ -47,7 +41,7 @@ export async function POST(request:Request){
    ? body.args as Record<string,unknown>
    : {}
 
-  const {data,error}=await supabase().rpc(name,{p_token:session.token,...args})
+  const {data,error}=await neonRpc(name,{p_token:session.token,...args})
   if(error){
    console.error("LekHub admin RPC failed",name,error)
    return NextResponse.json(

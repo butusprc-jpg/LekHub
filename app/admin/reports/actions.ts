@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { getLineAdminSession } from "../../../lib/admin-session"
-import { createAdminClient } from "../../../lib/supabase/admin"
+import { createAdminClient } from "../../../lib/neon/admin"
 
 export async function updateSubmission(formData: FormData) {
   const access = await getLineAdminSession()

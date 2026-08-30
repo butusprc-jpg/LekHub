@@ -1,23 +1,10 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { ADMIN_COOKIE } from "../../../../lib/admin-session"
 import { verifyLineMember } from "../../../../lib/server/line-member"
+import { neonRpc } from "../../../../lib/server/neon-db"
 
 export const runtime = "nodejs"
 
-function supabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
-  const key = (
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )?.trim()
-
-  if (!url || !key) throw new Error("Missing Supabase environment variables")
-
-  return createClient(url, key, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-}
 
 export async function POST(request: Request) {
   try {
@@ -29,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     const profile = await verifyLineMember(accessToken)
-    const { data, error } = await supabaseClient().rpc("lekhub_line_admin_login_v2", {
+    const { data, error } = await neonRpc<any>("lekhub_line_admin_login_v2", {
       p_channel_id: profile.channelId,
       p_line_user_id: profile.userId,
       p_display_name: profile.displayName,

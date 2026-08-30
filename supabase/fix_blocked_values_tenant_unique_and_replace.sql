@@ -6,7 +6,7 @@ drop index if exists public.lekhub_blocked_values_unique_rule_idx;
 
 create unique index if not exists lekhub_blocked_values_tenant_unique_idx
 on public.lekhub_blocked_values (
-  coalesce(tenant_key,''),
+  tenant_key,
   item_value,
   coalesce(category,'')
 );
@@ -32,10 +32,11 @@ begin
   end if;
 
   v_tenant:=nullif(v_session->>'tenant_key','');
+  if v_tenant is null then raise exception 'tenant_required'; end if;
 
   update public.lekhub_blocked_values
      set active=false, updated_at=now()
-   where tenant_key is not distinct from v_tenant
+   where tenant_key=v_tenant
      and active=true;
 
   foreach v in array coalesce(p_values,array[]::text[]) loop
@@ -53,7 +54,7 @@ begin
          set active=true,
              note='ตั้งค่าจากหลังบ้าน',
              updated_at=now()
-       where coalesce(tenant_key,'')=coalesce(v_tenant,'')
+       where tenant_key=v_tenant
          and item_value=v_clean
          and coalesce(category,'')='';
     end if;

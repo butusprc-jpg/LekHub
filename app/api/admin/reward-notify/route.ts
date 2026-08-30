@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getLineAdminSession } from "../../../../lib/admin-session"
+import { getTenantLineToken } from "../../../../lib/server/neon-db"
 
 export const runtime="nodejs"
 
@@ -130,7 +131,11 @@ export async function POST(request:Request){
   const session=await getLineAdminSession()
   if(!session)return NextResponse.json({ok:false,error:"admin_required"},{status:401,headers:{"cache-control":"no-store"}})
 
-  const channelToken=process.env.LINE_CHANNEL_ACCESS_TOKEN?.trim()
+  if(!session.tenantKey){
+   return NextResponse.json({ok:false,error:"tenant_required"},{status:403,headers:{"cache-control":"no-store"}})
+  }
+
+  const channelToken=await getTenantLineToken(session.tenantKey)
   if(!channelToken)return NextResponse.json({ok:true,pushed:0,failed:0,skipped:"line_push_not_configured"},{headers:{"cache-control":"no-store"}})
 
   let pushed=0
