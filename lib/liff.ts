@@ -65,21 +65,39 @@ async function resolveLiffId(){
   return String(result.liffId).trim()
 }
 
-export async function initLIFF() {
-  const liff = await new Promise<LiffClient>((resolve, reject) => {
-    let tries = 0
-    const timer = window.setInterval(() => {
-      if (window.liff) {
-        clearInterval(timer)
-        resolve(window.liff)
-      } else if (++tries > 50) {
-        clearInterval(timer)
-        reject(new Error("liff_not_ready"))
-      }
-    }, 100)
-  })
+// สำคัญ: cache ไว้ตัวเดียวต่อ browser tab/session
+// ป้องกันไม่ให้ liff.init() ถูกเรียกซ้ำตอนสลับหน้าแบบ client-side navigation
+// (เช่น กด <Link> จาก /member/play ไป /report) ซึ่ง LIFF SDK ไม่รองรับ
+// การ init ซ้ำในหน้าเดียวกัน และทำให้ isLoggedIn() คืนค่าผิดพลาดได้
+let liffReadyPromise: Promise<LiffClient> | null = null
 
-  await liff.init({liffId:await resolveLiffId()})
+async function getLiffInstance(): Promise<LiffClient> {
+  if (!liffReadyPromise) {
+    liffReadyPromise = (async () => {
+      const liff = await new Promise<LiffClient>((resolve, reject) => {
+        let tries = 0
+        const timer = window.setInterval(() => {
+          if (window.liff) {
+            clearInterval(timer)
+            resolve(window.liff)
+          } else if (++tries > 50) {
+            clearInterval(timer)
+            reject(new Error("liff_not_ready"))
+          }
+        }, 100)
+      })
+      await liff.init({ liffId: await resolveLiffId() })
+      return liff
+    })().catch((err) => {
+      liffReadyPromise = null
+      throw err
+    })
+  }
+  return liffReadyPromise
+}
+
+export async function initLIFF() {
+  const liff = await getLiffInstance()
 
   if (!liff.isLoggedIn()) {
     liff.login({ redirectUri: window.location.href })
